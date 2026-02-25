@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>2-DOF Robot Control Lab — Abdirahman Mohamed</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#020510;--bg2:#040920;--surface:#070f1f;--card:#0a1628;
+  --border:#0e2040;--border2:#1a3a6a;--cyan:#00f5ff;--cyan2:#00bcd4;
+  --orange:#ff6d00;--green:#00e676;--red:#ff1744;--purple:#d500f9;
+  --yellow:#ffea00;--text:#e0f2fe;--muted:#4a7a9b;
+  --glow:0 0 20px rgba(0,245,255,0.3);--glow2:0 0 30px rgba(0,245,255,0.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.particle{position:absolute;width:2px;height:2px;background:var(--cyan);border-radius:50%;animation:float linear infinite;opacity:0;}
+@keyframes float{0%{transform:translateY(100vh) translateX(0);opacity:0;}10%{opacity:0.6;}90%{opacity:0.3;}100%{transform:translateY(-10vh) translateX(var(--dx));opacity:0;}}
+header{position:relative;z-index:10;padding:0 2rem;background:linear-gradient(180deg,rgba(0,5,16,0.98) 0%,transparent 100%);border-bottom:1px solid var(--border);}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:1rem 0;flex-wrap:wrap;gap:0.5rem;}
+.logo{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;color:var(--cyan);letter-spacing:0.1em;text-shadow:var(--glow);display:flex;align-items:center;gap:0.8rem;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan),0 0 20px var(--cyan);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.4);opacity:0.7;}}
+.author-badge{font-family:'Orbitron',monospace;font-size:0.6rem;color:var(--muted);letter-spacing:0.12em;border:1px solid var(--border2);padding:0.4rem 1rem;border-radius:2rem;background:rgba(0,245,255,0.04);}
+.author-badge span{color:var(--cyan);}
+nav{display:flex;gap:0.3rem;flex-wrap:wrap;}
+nav a{color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.08em;padding:0.35rem 0.8rem;border-radius:0.3rem;font-family:'Orbitron',monospace;font-weight:600;transition:all 0.2s;border:1px solid transparent;}
+nav a:hover{color:var(--cyan);border-color:var(--border2);background:rgba(0,245,255,0.05);}
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,50,100,0.4) 0%,transparent 70%);overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,245,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.03) 1px,transparent 1px);background-size:50px 50px;animation:gridMove 20s linear infinite;}
+@keyframes gridMove{from{background-position:0 0;}to{background-position:50px 50px;}}
+.hero-tag{font-family:'Orbitron',monospace;font-size:0.62rem;letter-spacing:0.25em;color:var(--cyan);border:1px solid rgba(0,245,255,0.3);padding:0.5rem 1.5rem;border-radius:2rem;background:rgba(0,245,255,0.06);margin-bottom:2rem;animation:fadeUp 0.8s ease both;}
+.hero h1{font-family:'Orbitron',monospace;font-size:clamp(1.8rem,4.5vw,4rem);font-weight:900;line-height:1.1;letter-spacing:-0.01em;animation:fadeUp 0.9s ease 0.1s both;}
+.hero h1 .line2{color:var(--cyan);text-shadow:var(--glow);display:block;}
+.hero-sub{font-size:1rem;color:var(--muted);max-width:600px;margin:1.5rem auto;line-height:1.7;font-weight:300;animation:fadeUp 0.9s ease 0.2s both;}
+.hero-author{font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--cyan);letter-spacing:0.2em;margin-bottom:2rem;animation:fadeUp 0.9s ease 0.3s both;opacity:0.8;}
+#heroRobotCanvas{border:1px solid var(--border2);border-radius:1rem;background:rgba(7,15,31,0.9);box-shadow:var(--glow2);animation:fadeUp 1s ease 0.4s both;max-width:100%;}
+.hero-stats{display:flex;gap:2rem;margin-top:1.5rem;flex-wrap:wrap;justify-content:center;animation:fadeUp 1s ease 0.5s both;}
+.hero-stat .val{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;color:var(--cyan);text-shadow:var(--glow);}
+.hero-stat .lbl{font-size:0.7rem;color:var(--muted);letter-spacing:0.1em;}
+.section{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:4rem 2rem;}
+.sec-tag{font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:0.25em;color:var(--cyan);margin-bottom:0.7rem;display:flex;align-items:center;gap:0.8rem;}
+.sec-tag::before{content:'';display:block;width:30px;height:1px;background:var(--cyan);}
+.sec-title{font-family:'Orbitron',monospace;font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;color:var(--text);letter-spacing:-0.01em;margin-bottom:2rem;}
+.sec-title span{color:var(--cyan);}
+hr.divider{border:none;border-top:1px solid var(--border);margin:0;}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.5rem;position:relative;overflow:hidden;transition:border-color 0.3s;}
+.panel:hover{border-color:var(--border2);}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,245,255,0.3),transparent);}
+.panel-title{font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:0.12em;color:var(--cyan);margin-bottom:1.2rem;display:flex;align-items:center;gap:0.6rem;}
+.panel-title::before{content:'▸';}
+.sim-layout{display:grid;grid-template-columns:280px 1fr;gap:1.2rem;align-items:start;}
+@media(max-width:850px){.sim-layout{grid-template-columns:1fr;}}
+.controls-panel{display:flex;flex-direction:column;gap:0.8rem;}
+.ctrl-group{background:var(--surface);border:1px solid var(--border);border-radius:0.75rem;padding:1rem;}
+.ctrl-group-title{font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:0.18em;color:var(--muted);margin-bottom:0.8rem;}
+.slider-row{display:flex;align-items:center;gap:0.7rem;margin-bottom:0.7rem;}
+.slider-row:last-child{margin-bottom:0;}
+.slider-label{width:2.8rem;font-family:'Orbitron',monospace;font-size:0.68rem;color:var(--text);font-weight:600;flex-shrink:0;}
+.slider-wrap{flex:1;}
+input[type=range]{width:100%;height:4px;background:var(--border2);border-radius:2px;outline:none;border:none;-webkit-appearance:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);cursor:pointer;}
+input[type=range].orange::-webkit-slider-thumb{background:var(--orange);box-shadow:0 0 7px var(--orange);}
+input[type=range].green::-webkit-slider-thumb{background:var(--green);box-shadow:0 0 7px var(--green);}
+input[type=range].purple::-webkit-slider-thumb{background:var(--purple);box-shadow:0 0 7px var(--purple);}
+.slider-val{width:3.2rem;text-align:right;font-family:'Orbitron',monospace;font-size:0.68rem;color:var(--cyan);font-weight:700;flex-shrink:0;}
+.slider-val.orange{color:var(--orange);}.slider-val.green{color:var(--green);}
+.traj-btns{display:flex;gap:0.4rem;}
+.traj-btn{flex:1;padding:0.55rem 0.3rem;border:1px solid var(--border2);border-radius:0.5rem;background:transparent;color:var(--muted);font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;}
+.traj-btn:hover{color:var(--cyan);border-color:var(--cyan);}
+.traj-btn.active{background:rgba(0,245,255,0.1);border-color:var(--cyan);color:var(--cyan);}
+.play-btn{width:100%;padding:0.85rem;border:1px solid var(--cyan);border-radius:0.75rem;background:rgba(0,245,255,0.08);color:var(--cyan);font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:0.12em;cursor:pointer;transition:all 0.2s;}
+.play-btn:hover{background:rgba(0,245,255,0.15);box-shadow:0 0 20px rgba(0,245,255,0.25);}
+.play-btn.running{border-color:var(--orange);color:var(--orange);background:rgba(255,109,0,0.08);}
+.readouts{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;margin-bottom:1rem;}
+@media(max-width:600px){.readouts{grid-template-columns:repeat(2,1fr);}}
+.readout{background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;padding:0.6rem;text-align:center;}
+.readout .r-val{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--cyan);}
+.readout .r-lbl{font-size:0.6rem;color:var(--muted);margin-top:0.2rem;letter-spacing:0.04em;}
+#simCanvas,#errCanvas,#rlCompareCanvas,#fkCanvas,#ikCanvas,#pidCanvas,#rlManualCanvas,#rlAutoCanvas{width:100%;border-radius:0.5rem;background:#020810;border:1px solid var(--border);display:block;}
+.rl-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+@media(max-width:700px){.rl-layout{grid-template-columns:1fr;}}
+.rl-badge{position:absolute;top:1rem;right:1rem;font-family:'Orbitron',monospace;font-size:0.58rem;padding:0.3rem 0.7rem;border-radius:2rem;letter-spacing:0.08em;}
+.rl-badge.manual{background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--cyan);}
+.rl-badge.rl{background:rgba(213,0,249,0.1);border:1px solid rgba(213,0,249,0.3);color:var(--purple);}
+.rl-stats{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.8rem;}
+.rl-stat{background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;padding:0.7rem;text-align:center;}
+.rl-stat .rv{font-family:'Orbitron',monospace;font-size:0.95rem;font-weight:700;}
+.rl-stat .rl{font-size:0.65rem;color:var(--muted);margin-top:0.2rem;}
+.rl-run-btn{width:100%;margin-top:1rem;padding:0.7rem;border:1px solid var(--purple);border-radius:0.5rem;background:rgba(213,0,249,0.08);color:var(--purple);font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;}
+.rl-run-btn:hover{background:rgba(213,0,249,0.15);box-shadow:0 0 15px rgba(213,0,249,0.2);}
+.rl-progress{width:100%;height:4px;background:var(--border);border-radius:2px;margin-top:0.7rem;overflow:hidden;}
+.rl-progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));border-radius:2px;width:0%;transition:width 0.1s;}
+.rl-log{font-family:'Orbitron',monospace;font-size:0.6rem;color:var(--muted);margin-top:0.5rem;min-height:1rem;letter-spacing:0.04em;}
+.fkik-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+@media(max-width:700px){.fkik-layout{grid-template-columns:1fr;}}
+.fkik-readout{font-family:'Orbitron',monospace;font-size:0.68rem;color:var(--green);margin-top:0.7rem;line-height:2;white-space:pre-line;}
+.pid-stats{display:flex;gap:1.5rem;flex-wrap:wrap;font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--muted);margin-top:0.7rem;}
+.pid-stats b{color:var(--cyan);}
+.flow{display:flex;flex-direction:column;align-items:center;max-width:640px;margin:0 auto;}
+.flow-node{width:100%;background:var(--card);border:1px solid var(--border2);border-radius:0.75rem;padding:1rem 1.4rem;display:flex;align-items:flex-start;gap:1rem;transition:all 0.3s;margin-bottom:0.3rem;}
+.flow-node:hover,.flow-node.active-node{border-color:var(--cyan);background:rgba(0,245,255,0.04);box-shadow:0 0 20px rgba(0,245,255,0.08);}
+.flow-num{width:2rem;height:2rem;border-radius:50%;flex-shrink:0;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.4);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:0.68rem;color:var(--cyan);font-weight:700;margin-top:0.1rem;}
+.flow-node h4{font-size:0.9rem;font-weight:600;margin-bottom:0.2rem;}
+.flow-node p{font-size:0.78rem;color:var(--muted);margin:0;}
+.flow-arrow{color:var(--cyan);font-size:1.2rem;margin:0.15rem 0;animation:ab 1.5s ease infinite;}
+@keyframes ab{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.math{background:#020810;border:1px solid var(--border);border-left:2px solid var(--cyan);border-radius:0.5rem;padding:1rem 1.4rem;font-family:'Orbitron',monospace;font-size:0.73rem;color:var(--cyan);line-height:2.2;margin:1rem 0;overflow-x:auto;}
+.math .cm{color:var(--muted);}.math .hl{color:var(--green);}
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:2.5rem 2rem;text-align:center;background:linear-gradient(0deg,rgba(0,245,255,0.02) 0%,transparent 100%);}
+.footer-name{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;color:var(--cyan);text-shadow:var(--glow);letter-spacing:0.15em;margin-bottom:0.4rem;}
+.footer-role{font-size:0.85rem;color:var(--muted);letter-spacing:0.08em;}
+.footer-copy{font-family:'Orbitron',monospace;font-size:0.58rem;color:var(--border2);margin-top:1.2rem;letter-spacing:0.12em;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}::-webkit-scrollbar-thumb:hover{background:var(--cyan);}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<header>
+  <div class="header-inner">
+    <div class="logo"><div class="logo-dot"></div>ROBOT CONTROL LAB</div>
+    <nav>
+      <a href="#simulator">SIM</a><a href="#rl">RL vs PID</a>
+      <a href="#fkik">FK/IK</a><a href="#pid">PID</a><a href="#flow">LOOP</a>
+    </nav>
+    <div class="author-badge">BY <span>ABDIRAHMAN MOHAMED</span></div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-tag">2-DOF PLANAR ROBOT — INTERACTIVE CONTROL LABORATORY</div>
+  <h1><span class="line1">ROBOT KINEMATICS &</span><span class="line2">PID TRAJECTORY CONTROL</span></h1>
+  <p class="hero-sub">Fully interactive simulation — tune link lengths, PID gains, compare RL vs manual control, and visualize every aspect of the control loop in real time.</p>
+  <div class="hero-author">DESIGNED & BUILT BY ABDIRAHMAN MOHAMED · EEE CONTROL SYSTEMS</div>
+  <canvas id="heroRobotCanvas" width="580" height="230"></canvas>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="val">2</div><div class="lbl">DOF</div></div>
+    <div class="hero-stat"><div class="val">3</div><div class="lbl">TRAJECTORIES</div></div>
+    <div class="hero-stat"><div class="val">6</div><div class="lbl">PID PARAMS</div></div>
+    <div class="hero-stat"><div class="val">50</div><div class="lbl">RL EPISODES</div></div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- SIMULATOR -->
+<section class="section" id="simulator">
+  <div class="sec-tag">01 — LIVE SIMULATION</div>
+  <h2 class="sec-title">Interactive Robot <span>Simulator</span></h2>
+  <div class="readouts">
+    <div class="readout"><div class="r-val" id="rdTheta1">0.0°</div><div class="r-lbl">θ₁ JOINT 1</div></div>
+    <div class="readout"><div class="r-val" id="rdTheta2">0.0°</div><div class="r-lbl">θ₂ JOINT 2</div></div>
+    <div class="readout"><div class="r-val" id="rdX">0.000m</div><div class="r-lbl">X TIP</div></div>
+    <div class="readout"><div class="r-val" id="rdY">0.000m</div><div class="r-lbl">Y TIP</div></div>
+  </div>
+  <div class="sim-layout">
+    <div class="controls-panel">
+      <div class="ctrl-group">
+        <div class="ctrl-group-title">⚙ ROBOT GEOMETRY</div>
+        <div class="slider-row"><span class="slider-label">L₁</span><div class="slider-wrap"><input type="range" id="slL1" min="0.1" max="2.0" step="0.05" value="0.5"/></div><span class="slider-val" id="vL1">0.50m</span></div>
+        <div class="slider-row"><span class="slider-label">L₂</span><div class="slider-wrap"><input type="range" id="slL2" min="0.1" max="2.0" step="0.05" value="0.5"/></div><span class="slider-val" id="vL2">0.50m</span></div>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-group-title">🎛 JOINT 1 PID</div>
+        <div class="slider-row"><span class="slider-label">Kp₁</span><div class="slider-wrap"><input type="range" id="slKp1" min="1" max="300" value="150"/></div><span class="slider-val" id="vKp1">150</span></div>
+        <div class="slider-row"><span class="slider-label">Ki₁</span><div class="slider-wrap"><input type="range" class="orange" id="slKi1" min="0" max="30" value="6"/></div><span class="slider-val orange" id="vKi1">6</span></div>
+        <div class="slider-row"><span class="slider-label">Kd₁</span><div class="slider-wrap"><input type="range" class="green" id="slKd1" min="0" max="50" value="20"/></div><span class="slider-val green" id="vKd1">20</span></div>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-group-title">🎛 JOINT 2 PID</div>
+        <div class="slider-row"><span class="slider-label">Kp₂</span><div class="slider-wrap"><input type="range" id="slKp2" min="1" max="300" value="130"/></div><span class="slider-val" id="vKp2">130</span></div>
+        <div class="slider-row"><span class="slider-label">Ki₂</span><div class="slider-wrap"><input type="range" class="orange" id="slKi2" min="0" max="30" value="5"/></div><span class="slider-val orange" id="vKi2">5</span></div>
+        <div class="slider-row"><span class="slider-label">Kd₂</span><div class="slider-wrap"><input type="range" class="green" id="slKd2" min="0" max="50" value="18"/></div><span class="slider-val green" id="vKd2">18</span></div>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-group-title">📐 TRAJECTORY</div>
+        <div class="traj-btns">
+          <button class="traj-btn active" data-traj="circle">CIRCLE</button>
+          <button class="traj-btn" data-traj="infinity">∞ FIG-8</button>
+          <button class="traj-btn" data-traj="rectangle">RECT</button>
+        </div>
+      </div>
+      <button class="play-btn" id="playBtn">▶ START SIMULATION</button>
+      <div class="ctrl-group" style="padding:0.8rem">
+        <div class="ctrl-group-title">📊 LIVE ERROR</div>
+        <canvas id="errCanvas" height="70"></canvas>
+      </div>
+    </div>
+    <div><canvas id="simCanvas" height="500"></canvas></div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- RL vs PID -->
+<section class="section" id="rl">
+  <div class="sec-tag">02 — REINFORCEMENT LEARNING</div>
+  <h2 class="sec-title">Manual PID vs <span>RL-Tuned PID</span></h2>
+  <p style="color:var(--muted);max-width:680px;margin-bottom:1.5rem;font-size:0.92rem;line-height:1.7">RL treats tracking error as a penalty signal. An agent explores the PID gain space over 50 episodes, converging on gains that minimize cumulative error — automatically.</p>
+  <div class="rl-layout">
+    <div class="panel" style="position:relative">
+      <div class="panel-title">MANUAL PID — YOUR GAINS</div>
+      <div class="rl-badge manual">MANUAL</div>
+      <canvas id="rlManualCanvas" height="230"></canvas>
+      <div class="rl-stats">
+        <div class="rl-stat"><div class="rv" id="rlManRMS" style="color:var(--cyan)">—</div><div class="rl">RMS ERROR (m)</div></div>
+        <div class="rl-stat"><div class="rv" id="rlManMax" style="color:var(--cyan)">—</div><div class="rl">MAX ERROR (m)</div></div>
+      </div>
+    </div>
+    <div class="panel" style="position:relative">
+      <div class="panel-title">RL-TUNED PID — AUTO GAINS</div>
+      <div class="rl-badge rl">RL AGENT</div>
+      <canvas id="rlAutoCanvas" height="230"></canvas>
+      <div class="rl-stats">
+        <div class="rl-stat"><div class="rv" id="rlAutoRMS" style="color:var(--purple)">—</div><div class="rl">RMS ERROR (m)</div></div>
+        <div class="rl-stat"><div class="rv" id="rlAutoKp" style="color:var(--purple)">—</div><div class="rl">BEST Kp FOUND</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:1.2rem">
+    <div class="panel-title">RL LEARNING CURVE</div>
+    <canvas id="rlCompareCanvas" height="150"></canvas>
+    <div class="rl-progress"><div class="rl-progress-bar" id="rlBar"></div></div>
+    <div class="rl-log" id="rlLog">Press RUN to start RL optimization...</div>
+    <button class="rl-run-btn" id="rlRunBtn">⚡ RUN RL OPTIMIZATION — 50 EPISODES</button>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FK / IK -->
+<section class="section" id="fkik">
+  <div class="sec-tag">03 — KINEMATICS</div>
+  <h2 class="sec-title">Forward & Inverse <span>Kinematics</span></h2>
+  <div class="fkik-layout">
+    <div class="panel">
+      <div class="panel-title">FORWARD KINEMATICS — Angles → Position</div>
+      <canvas id="fkCanvas" height="250"></canvas>
+      <div style="margin-top:0.8rem">
+        <div class="slider-row"><span class="slider-label" style="color:var(--cyan)">θ₁</span><div class="slider-wrap"><input type="range" id="fkTh1" min="-170" max="170" value="40"/></div><span class="slider-val" id="fkTh1v">40°</span></div>
+        <div class="slider-row"><span class="slider-label" style="color:var(--orange)">θ₂</span><div class="slider-wrap"><input type="range" class="orange" id="fkTh2" min="-170" max="170" value="60"/></div><span class="slider-val orange" id="fkTh2v">60°</span></div>
+      </div>
+      <div class="fkik-readout" id="fkResult"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">INVERSE KINEMATICS — Click Canvas to Set Target</div>
+      <canvas id="ikCanvas" height="250" style="cursor:crosshair"></canvas>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:0.7rem">Click or drag on canvas. IK solves in real-time.</p>
+      <div class="fkik-readout" id="ikResult"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:1.2rem">
+    <div class="panel-title">IK MATH — LAW OF COSINES</div>
+    <div class="math">
+      <span class="cm">// Step 1: Solve θ₂</span><br/>
+      c₂ = <span class="hl">(x² + y² − L₁² − L₂²)</span> / (2·L₁·L₂)&nbsp;&nbsp;&nbsp;s₂ = +√(1−c₂²)&nbsp;&nbsp;&nbsp;θ₂ = atan2(s₂,c₂)<br/><br/>
+      <span class="cm">// Step 2: Solve θ₁</span><br/>
+      k₁ = L₁ + L₂·c₂&nbsp;&nbsp;&nbsp;k₂ = L₂·s₂&nbsp;&nbsp;&nbsp;θ₁ = atan2(y,x) − atan2(k₂,k₁)
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- PID TUNER -->
+<section class="section" id="pid">
+  <div class="sec-tag">04 — PID CONTROLLER</div>
+  <h2 class="sec-title">PID Step Response <span>Tuner</span></h2>
+  <div class="panel">
+    <div class="panel-title">LIVE STEP RESPONSE</div>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:1.5rem;align-items:start">
+      <div>
+        <div class="slider-row" style="margin-bottom:1rem"><span class="slider-label">Kp</span><div class="slider-wrap"><input type="range" id="pKp" min="1" max="150" value="40"/></div><span class="slider-val" id="pKpv">40</span></div>
+        <div class="slider-row" style="margin-bottom:1rem"><span class="slider-label">Ki</span><div class="slider-wrap"><input type="range" class="orange" id="pKi" min="0" max="40" value="5"/></div><span class="slider-val orange" id="pKiv">5</span></div>
+        <div class="slider-row" style="margin-bottom:1.5rem"><span class="slider-label">Kd</span><div class="slider-wrap"><input type="range" class="green" id="pKd" min="0" max="40" value="10"/></div><span class="slider-val green" id="pKdv">10</span></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;padding:0.9rem">
+          <div style="font-family:'Orbitron',monospace;font-size:0.58rem;color:var(--muted);margin-bottom:0.6rem;letter-spacing:0.12em">TUNING GUIDE</div>
+          <div style="font-size:0.78rem;color:var(--muted);line-height:2.2">
+            <span style="color:var(--cyan)">↑ Kp</span> → faster, may overshoot<br/>
+            <span style="color:var(--orange)">↑ Ki</span> → removes steady-state error<br/>
+            <span style="color:var(--green)">↑ Kd</span> → dampens oscillation<br/>
+            <span style="color:var(--red)">Kd=0</span> → watch it oscillate!
+          </div>
+        </div>
+      </div>
+      <div>
+        <canvas id="pidCanvas" height="210"></canvas>
+        <div class="pid-stats" id="pidStats"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FLOW -->
+<section class="section" id="flow">
+  <div class="sec-tag">05 — SYSTEM ARCHITECTURE</div>
+  <h2 class="sec-title">Complete Control <span>Loop</span></h2>
+  <div class="flow">
+    <div class="flow-node" id="fn0"><div class="flow-num">1</div><div><h4>Trajectory Generator</h4><p>Outputs desired tip position (xd,yd) at time t → Circle: xd = cx+r·cos(ωt)</p></div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-node" id="fn1"><div class="flow-num">2</div><div><h4>Inverse Kinematics</h4><p>Converts (xd,yd) → desired joint angles (θ₁_des,θ₂_des) via law of cosines</p></div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-node" id="fn2"><div class="flow-num">3</div><div><h4>PID Controller × 2 Joints</h4><p>error = θ_desired − θ_actual → u = Kp·e + Ki·∫e·dt + Kd·(de/dt)</p></div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-node" id="fn3"><div class="flow-num">4</div><div><h4>Joint Plant (Dynamics)</h4><p>θ(k) = θ(k−1) + u·dt² — simplified unit-inertia integrator model</p></div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-node" id="fn4"><div class="flow-num">5</div><div><h4>Forward Kinematics (Feedback)</h4><p>x = L₁cos(θ₁)+L₂cos(θ₁+θ₂) → actual tip position for display & error</p></div></div>
+    <div class="flow-arrow">↺ every 10 ms</div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<footer>
+  <div class="footer-name">ABDIRAHMAN MOHAMED</div>
+  <div class="footer-role">EEE CONTROL SYSTEMS · 2-DOF ROBOT CONTROL LABORATORY</div>
+  <div class="footer-copy">© 2024 · BUILT WITH ENGINEERING PASSION · ALL RIGHTS RESERVED</div>
+</footer>
+
+<script>
+// ============ PARTICLES ============
+const pc=document.getElementById('particles');
+for(let i=0;i<35;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.setProperty('--dx',(Math.random()-0.5)*200+'px');p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=Math.random()*10+'s';pc.appendChild(p);}
+
+// ============ IK / FK MATH ============
+function ikSolve(x,y,L1,L2){
+  const d=Math.sqrt(x*x+y*y);
+  if(d>=(L1+L2)*0.999||d<=Math.abs(L1-L2)*1.001)return null;
+  let c2=(x*x+y*y-L1*L1-L2*L2)/(2*L1*L2);
+  c2=Math.max(-1,Math.min(1,c2));
+  const s2=Math.sqrt(1-c2*c2);
+  const th2=Math.atan2(s2,c2);
+  const k1=L1+L2*c2,k2=L2*s2;
+  return{th1:Math.atan2(y,x)-Math.atan2(k2,k1),th2};
+}
+function fkSolve(th1,th2,L1,L2){
+  return{ex:L1*Math.cos(th1),ey:L1*Math.sin(th1),
+    x:L1*Math.cos(th1)+L2*Math.cos(th1+th2),
+    y:L1*Math.sin(th1)+L2*Math.sin(th1+th2)};
+}
+
+// ============ HERO CANVAS ============
+const hc=document.getElementById('heroRobotCanvas');
+const hx=hc.getContext('2d');
+let hAng=0;const hTrail=[];
+function drawHero(){
+  const W=hc.width,H=hc.height;
+  hx.clearRect(0,0,W,H);
+  hx.strokeStyle='rgba(0,245,255,0.04)';hx.lineWidth=1;
+  for(let i=0;i<W;i+=40){hx.beginPath();hx.moveTo(i,0);hx.lineTo(i,H);hx.stroke();}
+  for(let i=0;i<H;i+=40){hx.beginPath();hx.moveTo(0,i);hx.lineTo(W,i);hx.stroke();}
+  const CX=160,CY=120,L1=80,L2=70,r=55;
+  const tx=CX+100+r*Math.cos(hAng),ty=CY+r*Math.sin(hAng);
+  hx.beginPath();hx.arc(CX+100,CY,r,0,Math.PI*2);
+  hx.strokeStyle='rgba(0,245,255,0.1)';hx.lineWidth=1;hx.setLineDash([4,6]);hx.stroke();hx.setLineDash([]);
+  const ik=ikSolve(tx-CX,ty-CY,L1,L2);
+  if(ik){
+    const{th1,th2}=ik;
+    const ex=CX+L1*Math.cos(th1),ey=CY+L1*Math.sin(th1);
+    const tpx=ex+L2*Math.cos(th1+th2),tpy=ey+L2*Math.sin(th1+th2);
+    hTrail.push({x:tpx,y:tpy});if(hTrail.length>90)hTrail.shift();
+    hTrail.forEach((t,i)=>{hx.beginPath();hx.arc(t.x,t.y,1.5,0,Math.PI*2);hx.fillStyle=`rgba(0,245,255,${(i/hTrail.length)*0.5})`;hx.fill();});
+    const g1=hx.createLinearGradient(CX,CY,ex,ey);g1.addColorStop(0,'#1a3a7a');g1.addColorStop(1,'#2563eb');
+    hx.beginPath();hx.moveTo(CX,CY);hx.lineTo(ex,ey);hx.strokeStyle=g1;hx.lineWidth=7;hx.lineCap='round';hx.stroke();
+    const g2=hx.createLinearGradient(ex,ey,tpx,tpy);g2.addColorStop(0,'#7a2200');g2.addColorStop(1,'#ff6d00');
+    hx.beginPath();hx.moveTo(ex,ey);hx.lineTo(tpx,tpy);hx.strokeStyle=g2;hx.lineWidth=6;hx.stroke();
+    [[CX,CY,'#00f5ff',10],[ex,ey,'#00e676',8],[tpx,tpy,'#ff6d00',7]].forEach(([jx,jy,c,r2])=>{
+      hx.beginPath();hx.arc(jx,jy,r2,0,Math.PI*2);hx.fillStyle=c;hx.shadowColor=c;hx.shadowBlur=12;hx.fill();hx.shadowBlur=0;
+    });
+  }
+  // small previews right side
+  const prevs=[{lx:370,ly:80,fn:a=>({x:Math.cos(a)*30,y:Math.sin(a)*30}),lbl:'CIRCLE'},
+               {lx:450,ly:80,fn:a=>({x:Math.sin(a)*28,y:Math.sin(2*a)*14}),lbl:'∞'},
+               {lx:530,ly:80,fn:null,lbl:'RECT'}];
+  prevs.forEach(({lx,ly,fn,lbl})=>{
+    hx.strokeStyle='rgba(0,245,255,0.12)';hx.lineWidth=1;hx.beginPath();hx.roundRect(lx-36,ly-38,72,76,5);hx.stroke();
+    if(fn){hx.beginPath();for(let t=0;t<=Math.PI*2+0.1;t+=0.05){const p=fn(t);t===0?hx.moveTo(lx+p.x,ly+p.y):hx.lineTo(lx+p.x,ly+p.y);}hx.strokeStyle='rgba(0,245,255,0.4)';hx.lineWidth=1.5;hx.stroke();const cp=fn(hAng);hx.beginPath();hx.arc(lx+cp.x,ly+cp.y,3,0,Math.PI*2);hx.fillStyle='#ff6d00';hx.shadowColor='#ff6d00';hx.shadowBlur=6;hx.fill();hx.shadowBlur=0;}
+    else{hx.strokeStyle='rgba(0,245,255,0.4)';hx.lineWidth=1.5;hx.strokeRect(lx-20,ly-17,40,34);}
+    hx.fillStyle='rgba(0,245,255,0.5)';hx.font='8px Orbitron,monospace';hx.textAlign='center';hx.fillText(lbl,lx,ly+44);hx.textAlign='left';
+  });
+  hAng+=0.02;requestAnimationFrame(drawHero);
+}
+drawHero();
+
+// ============ MAIN SIMULATOR ============
+const simCv=document.getElementById('simCanvas');const simCtx=simCv.getContext('2d');
+const errCv=document.getElementById('errCanvas');const errCtx=errCv.getContext('2d');
+let simRunning=false,simT=0,simDt=0.01,simT2=10;
+let simTh1=0,simTh2=0,e1i=0,e1p=0,e2i=0,e2p=0;
+let simTrail=[],errHist=[],curTraj='circle';
+
+function getP(){return{L1:+document.getElementById('slL1').value,L2:+document.getElementById('slL2').value,Kp1:+document.getElementById('slKp1').value,Ki1:+document.getElementById('slKi1').value,Kd1:+document.getElementById('slKd1').value,Kp2:+document.getElementById('slKp2').value,Ki2:+document.getElementById('slKi2').value,Kd2:+document.getElementById('slKd2').value};}
+
+function getDesired(t,traj,L1,L2){
+  const om=2*Math.PI/simT2,mr=(L1+L2)*0.36,cx=(L1+L2)*0.52,cy=(L1+L2)*0.12;
+  if(traj==='circle')return{x:cx+mr*Math.cos(om*t),y:cy+mr*Math.sin(om*t)};
+  if(traj==='infinity')return{x:cx+mr*Math.sin(om*t),y:cy+(mr/2)*Math.sin(2*om*t)};
+  const hw=mr,hh=mr*0.6,cors=[[cx-hw,cy-hh],[cx+hw,cy-hh],[cx+hw,cy+hh],[cx-hw,cy+hh],[cx-hw,cy-hh]];
+  const sd=simT2/4,seg=Math.min(Math.floor(t/sd),3),tl=Math.min(Math.max((t-seg*sd)/sd,0),1);
+  return{x:cors[seg][0]+tl*(cors[seg+1][0]-cors[seg][0]),y:cors[seg][1]+tl*(cors[seg+1][1]-cors[seg][1])};
+}
+
+function resetSim(){
+  simT=0;const p=getP();const init=getDesired(0,curTraj,p.L1,p.L2);const ik=ikSolve(init.x,init.y,p.L1,p.L2);
+  simTh1=ik?ik.th1:0;simTh2=ik?ik.th2:0;e1i=0;e1p=0;e2i=0;e2p=0;simTrail=[];errHist=[];
+}
+
+function simStep(){
+  const p=getP();const des=getDesired(simT,curTraj,p.L1,p.L2);const ik=ikSolve(des.x,des.y,p.L1,p.L2);
+  if(!ik)return;
+  const err1=ik.th1-simTh1;e1i+=err1*simDt;const u1=p.Kp1*err1+p.Ki1*e1i+p.Kd1*(err1-e1p)/simDt;e1p=err1;
+  const err2=ik.th2-simTh2;e2i+=err2*simDt;const u2=p.Kp2*err2+p.Ki2*e2i+p.Kd2*(err2-e2p)/simDt;e2p=err2;
+  simTh1+=u1*simDt*simDt;simTh2+=u2*simDt*simDt;
+  const fk=fkSolve(simTh1,simTh2,p.L1,p.L2);
+  const posErr=Math.sqrt((des.x-fk.x)**2+(des.y-fk.y)**2);
+  errHist.push(posErr);if(errHist.length>300)errHist.shift();
+  const W2=simCv.width,sc=Math.min(W2,simCv.height)/(2*(p.L1+p.L2)+0.3);
+  const CX2=W2/2-20,CY2=simCv.height/2+20;
+  simTrail.push({x:CX2+fk.x*sc,y:CY2-fk.y*sc});if(simTrail.length>220)simTrail.shift();
+  document.getElementById('rdTheta1').textContent=(simTh1*180/Math.PI).toFixed(1)+'°';
+  document.getElementById('rdTheta2').textContent=(simTh2*180/Math.PI).toFixed(1)+'°';
+  document.getElementById('rdX').textContent=fk.x.toFixed(3)+'m';
+  document.getElementById('rdY').textContent=fk.y.toFixed(3)+'m';
+  simT+=simDt;if(simT>=simT2){simT=0;e1i=0;e1p=0;e2i=0;e2p=0;simTrail=[];}
+}
+
+function drawSim(){
+  const p=getP();const W=simCv.width,H=simCv.height;
+  simCtx.clearRect(0,0,W,H);
+  simCtx.strokeStyle='rgba(0,245,255,0.04)';simCtx.lineWidth=1;
+  for(let i=0;i<W;i+=40){simCtx.beginPath();simCtx.moveTo(i,0);simCtx.lineTo(i,H);simCtx.stroke();}
+  for(let i=0;i<H;i+=40){simCtx.beginPath();simCtx.moveTo(0,i);simCtx.lineTo(W,i);simCtx.stroke();}
+  const sc=Math.min(W,H)/(2*(p.L1+p.L2)+0.3);
+  const CX=W/2-20,CY=H/2+20;
+  // desired traj
+  simCtx.beginPath();
+  for(let t=0;t<=simT2;t+=0.05){const d=getDesired(t,curTraj,p.L1,p.L2);const px=CX+d.x*sc,py=CY-d.y*sc;t===0?simCtx.moveTo(px,py):simCtx.lineTo(px,py);}
+  simCtx.strokeStyle='rgba(0,245,255,0.13)';simCtx.lineWidth=1.5;simCtx.setLineDash([5,8]);simCtx.stroke();simCtx.setLineDash([]);
+  // trail
+  simTrail.forEach((t,i)=>{simCtx.beginPath();simCtx.arc(t.x,t.y,1.5,0,Math.PI*2);simCtx.fillStyle=`rgba(0,245,255,${(i/simTrail.length)*0.6})`;simCtx.fill();});
+  // arm
+  const fk=fkSolve(simTh1,simTh2,p.L1,p.L2);
+  const j0x=CX,j0y=CY,j1x=CX+fk.ex*sc,j1y=CY-fk.ey*sc,j2x=CX+fk.x*sc,j2y=CY-fk.y*sc;
+  simCtx.beginPath();simCtx.moveTo(j0x,j0y);simCtx.lineTo(j1x,j1y);simCtx.lineTo(j2x,j2y);
+  simCtx.strokeStyle='rgba(0,245,255,0.06)';simCtx.lineWidth=20;simCtx.lineCap='round';simCtx.stroke();
+  const g1=simCtx.createLinearGradient(j0x,j0y,j1x,j1y);g1.addColorStop(0,'#1a3a7a');g1.addColorStop(1,'#2563eb');
+  simCtx.beginPath();simCtx.moveTo(j0x,j0y);simCtx.lineTo(j1x,j1y);simCtx.strokeStyle=g1;simCtx.lineWidth=10;simCtx.stroke();
+  const g2=simCtx.createLinearGradient(j1x,j1y,j2x,j2y);g2.addColorStop(0,'#7a2200');g2.addColorStop(1,'#ea580c');
+  simCtx.beginPath();simCtx.moveTo(j1x,j1y);simCtx.lineTo(j2x,j2y);simCtx.strokeStyle=g2;simCtx.lineWidth=8;simCtx.stroke();
+  [[j0x,j0y,'#00f5ff',11,'BASE'],[j1x,j1y,'#00e676',8,'J1'],[j2x,j2y,'#ff6d00',7,'EE']].forEach(([jx,jy,c,r,lbl])=>{
+    simCtx.beginPath();simCtx.arc(jx,jy,r,0,Math.PI*2);simCtx.fillStyle=c;simCtx.shadowColor=c;simCtx.shadowBlur=12;simCtx.fill();simCtx.shadowBlur=0;
+    simCtx.fillStyle='rgba(255,255,255,0.4)';simCtx.font='9px Orbitron,monospace';simCtx.fillText(lbl,jx+13,jy-4);
+  });
+  const des=getDesired(simT,curTraj,p.L1,p.L2);const dsx=CX+des.x*sc,dsy=CY-des.y*sc;
+  simCtx.strokeStyle='rgba(255,255,255,0.4)';simCtx.lineWidth=1.5;
+  simCtx.beginPath();simCtx.moveTo(dsx-8,dsy);simCtx.lineTo(dsx+8,dsy);simCtx.stroke();
+  simCtx.beginPath();simCtx.moveTo(dsx,dsy-8);simCtx.lineTo(dsx,dsy+8);simCtx.stroke();
+  // workspace
+  simCtx.beginPath();simCtx.arc(CX,CY,(p.L1+p.L2)*sc,0,Math.PI*2);
+  simCtx.strokeStyle='rgba(0,245,255,0.03)';simCtx.lineWidth=1;simCtx.setLineDash([2,10]);simCtx.stroke();simCtx.setLineDash([]);
+  // link labels
+  simCtx.fillStyle='rgba(0,245,255,0.35)';simCtx.font='9px Orbitron,monospace';
+  simCtx.fillText('L₁='+p.L1.toFixed(2)+'m',j0x+4,j0y+(j1y-j0y)*0.5);
+  simCtx.fillText('L₂='+p.L2.toFixed(2)+'m',j1x+4,j1y+(j2y-j1y)*0.5);
+  simCtx.fillStyle='rgba(0,245,255,0.2)';simCtx.font='9px Orbitron,monospace';
+  simCtx.fillText('t='+simT.toFixed(2)+'s',8,H-8);
+  // err graph
+  const EW=errCv.getBoundingClientRect().width||260;errCv.width=EW;errCv.height=70;
+  errCtx.fillStyle='#020810';errCtx.fillRect(0,0,EW,70);
+  if(errHist.length>2){
+    const maxE=Math.max(...errHist,0.001);
+    errCtx.beginPath();errHist.forEach((v,i)=>{const ex2=i/errHist.length*EW,ey2=68-(v/maxE)*60;i===0?errCtx.moveTo(ex2,ey2):errCtx.lineTo(ex2,ey2);});
+    errCtx.strokeStyle='#00f5ff';errCtx.lineWidth=1.5;errCtx.stroke();
+    errCtx.lineTo(EW,68);errCtx.lineTo(0,68);errCtx.fillStyle='rgba(0,245,255,0.05)';errCtx.fill();
+    const rms=Math.sqrt(errHist.reduce((a,v)=>a+v*v,0)/errHist.length);
+    errCtx.fillStyle='rgba(0,245,255,0.6)';errCtx.font='8px Orbitron,monospace';
+    errCtx.fillText('RMS:'+(rms*1000).toFixed(1)+'mm',3,11);
+  }
+}
+
+function resizeSim(){const ctr=simCv.parentElement;simCv.width=ctr.clientWidth;simCv.height=Math.min(ctr.clientWidth*0.85,500);}
+resizeSim();window.addEventListener('resize',resizeSim);
+
+function simLoop(){if(simRunning)for(let i=0;i<3;i++)simStep();drawSim();requestAnimationFrame(simLoop);}
+
+document.getElementById('playBtn').addEventListener('click',()=>{
+  simRunning=!simRunning;const btn=document.getElementById('playBtn');
+  if(simRunning){btn.textContent='⏸ PAUSE';btn.classList.add('running');}
+  else{btn.textContent='▶ START SIMULATION';btn.classList.remove('running');}
+  if(simT===0)resetSim();
+});
+
+[['slL1','vL1',v=>v+'m'],['slL2','vL2',v=>v+'m'],['slKp1','vKp1',v=>v],['slKi1','vKi1',v=>v],['slKd1','vKd1',v=>v],['slKp2','vKp2',v=>v],['slKi2','vKi2',v=>v],['slKd2','vKd2',v=>v]].forEach(([id,vid,fmt])=>{document.getElementById(id).addEventListener('input',function(){document.getElementById(vid).textContent=fmt(this.value);resetSim();});});
+document.querySelectorAll('.traj-btn').forEach(btn=>{btn.addEventListener('click',function(){document.querySelectorAll('.traj-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');curTraj=this.dataset.traj;resetSim();});});
+resetSim();simLoop();
+
+// ============ RL vs PID ============
+function runSim(Kp,Ki,Kd,L1,L2){
+  const dt=0.01,tot=10,om=2*Math.PI/tot,mr=(L1+L2)*0.36,cx=(L1+L2)*0.52,cy=(L1+L2)*0.12;
+  let th1=0,th2=0,ei1=0,ep1=0,ei2=0,ep2=0;
+  const xs=[],ys=[],dxs=[],dys=[];
+  for(let t=0;t<=tot;t+=dt){
+    const dx=cx+mr*Math.cos(om*t),dy=cy+mr*Math.sin(om*t);
+    const ik=ikSolve(dx,dy,L1,L2);if(!ik)continue;
+    const e1=ik.th1-th1;ei1+=e1*dt;const u1=Kp*e1+Ki*ei1+Kd*(e1-ep1)/dt;ep1=e1;
+    const e2=ik.th2-th2;ei2+=e2*dt;const u2=Kp*e2+Ki*ei2+Kd*(e2-ep2)/dt;ep2=e2;
+    th1+=u1*dt*dt;th2+=u2*dt*dt;
+    const fk=fkSolve(th1,th2,L1,L2);xs.push(fk.x);ys.push(fk.y);dxs.push(dx);dys.push(dy);
+  }
+  const errs=xs.map((x,i)=>Math.sqrt((x-dxs[i])**2+(ys[i]-dys[i])**2));
+  return{xs,ys,dxs,dys,rms:Math.sqrt(errs.reduce((a,v)=>a+v*v,0)/errs.length),max:Math.max(...errs),errs};
+}
+
+function drawRLCv(cvId,xs,ys,dxs,dys,color){
+  const cv=document.getElementById(cvId);const ctx=cv.getContext('2d');
+  const W=cv.getBoundingClientRect().width||300;cv.width=W;cv.height=230;
+  ctx.fillStyle='#020810';ctx.fillRect(0,0,W,230);
+  if(!xs.length)return;
+  const allX=[...xs,...dxs],allY=[...ys,...dys];
+  const mnX=Math.min(...allX),mxX=Math.max(...allX),mnY=Math.min(...allY),mxY=Math.max(...allY);
+  const pad=25,scX=(W-pad*2)/(mxX-mnX||1),scY=(230-pad*2)/(mxY-mnY||1);
+  const toP=(x,y)=>({px:pad+(x-mnX)*scX,py:230-pad-(y-mnY)*scY});
+  ctx.beginPath();dxs.forEach((x,i)=>{const p=toP(x,dys[i]);i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);});
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();xs.forEach((x,i)=>{const p=toP(x,ys[i]);i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);});
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='8px Orbitron,monospace';ctx.fillText('-- DESIRED',pad,18);
+  ctx.fillStyle=color;ctx.fillText('— ACTUAL',pad+70,18);
+}
+
+let rlBusy=false;
+document.getElementById('rlRunBtn').addEventListener('click',function(){
+  if(rlBusy)return;rlBusy=true;this.textContent='⏳ OPTIMIZING...';
+  const p=getP();
+  const manRes=runSim(p.Kp1,p.Ki1,p.Kd1,p.L1,p.L2);
+  drawRLCv('rlManualCanvas',manRes.xs,manRes.ys,manRes.dxs,manRes.dys,'#00f5ff');
+  document.getElementById('rlManRMS').textContent=manRes.rms.toFixed(4);
+  document.getElementById('rlManMax').textContent=manRes.max.toFixed(4);
+  let bKp=p.Kp1,bKi=p.Ki1,bKd=p.Kd1,bRms=manRes.rms;
+  const rmsH=[manRes.rms];let ep=0;const eps=50;
+  const bar=document.getElementById('rlBar');const log=document.getElementById('rlLog');
+  const rlCv=document.getElementById('rlCompareCanvas');const rlCtx=rlCv.getContext('2d');
+  const step=()=>{
+    if(ep>=eps){
+      const fr=runSim(bKp,bKi,bKd,p.L1,p.L2);
+      drawRLCv('rlAutoCanvas',fr.xs,fr.ys,fr.dxs,fr.dys,'#d500f9');
+      document.getElementById('rlAutoRMS').textContent=fr.rms.toFixed(4);
+      document.getElementById('rlAutoKp').textContent=Math.round(bKp);
+      log.textContent='✓ DONE: Best Kp='+Math.round(bKp)+' Ki='+bKi.toFixed(1)+' Kd='+bKd.toFixed(1)+' RMS='+bRms.toFixed(5)+'m';
+      document.getElementById('rlRunBtn').textContent='⚡ RE-RUN RL OPTIMIZATION';rlBusy=false;return;
+    }
+    const tKp=Math.max(10,bKp+(Math.random()-0.5)*60),tKi=Math.max(0,bKi+(Math.random()-0.5)*8),tKd=Math.max(0,bKd+(Math.random()-0.5)*15);
+    const r=runSim(tKp,tKi,tKd,p.L1,p.L2);
+    if(r.rms<bRms){bRms=r.rms;bKp=tKp;bKi=tKi;bKd=tKd;}
+    rmsH.push(bRms);bar.style.width=(ep/eps*100)+'%';
+    log.textContent='Episode '+(ep+1)+'/'+eps+' — Best RMS: '+bRms.toFixed(5)+'m  Kp='+Math.round(bKp);
+    const RW=rlCv.getBoundingClientRect().width||700;rlCv.width=RW;rlCv.height=150;
+    rlCtx.fillStyle='#020810';rlCtx.fillRect(0,0,RW,150);
+    const mxR=Math.max(...rmsH);
+    rlCtx.beginPath();rmsH.forEach((v,i)=>{const x2=i/eps*RW,y2=145-(v/mxR)*130;i===0?rlCtx.moveTo(x2,y2):rlCtx.lineTo(x2,y2);});
+    rlCtx.strokeStyle='#d500f9';rlCtx.lineWidth=2;rlCtx.stroke();
+    rlCtx.strokeStyle='rgba(0,245,255,0.25)';rlCtx.setLineDash([4,6]);rlCtx.lineWidth=1;
+    const bly=145-(manRes.rms/mxR)*130;rlCtx.beginPath();rlCtx.moveTo(0,bly);rlCtx.lineTo(RW,bly);rlCtx.stroke();rlCtx.setLineDash([]);
+    rlCtx.fillStyle='rgba(0,245,255,0.5)';rlCtx.font='8px Orbitron,monospace';rlCtx.fillText('-- MANUAL BASELINE',6,bly-4);
+    rlCtx.fillStyle='rgba(213,0,249,0.8)';rlCtx.fillText('— RL BEST',6,16);
+    ep++;setTimeout(step,25);
+  };step();
+});
+
+// ============ FK CANVAS ============
+const fkCv=document.getElementById('fkCanvas');const fkCtx=fkCv.getContext('2d');
+function drawFK(){
+  const th1=+document.getElementById('fkTh1').value*Math.PI/180;
+  const th2=+document.getElementById('fkTh2').value*Math.PI/180;
+  document.getElementById('fkTh1v').textContent=Math.round(th1*180/Math.PI)+'°';
+  document.getElementById('fkTh2v').textContent=Math.round(th2*180/Math.PI)+'°';
+  const W=fkCv.getBoundingClientRect().width||300;fkCv.width=W;fkCv.height=250;
+  fkCtx.fillStyle='#020810';fkCtx.fillRect(0,0,W,250);
+  fkCtx.strokeStyle='rgba(0,245,255,0.04)';fkCtx.lineWidth=1;
+  for(let i=0;i<W;i+=25){fkCtx.beginPath();fkCtx.moveTo(i,0);fkCtx.lineTo(i,250);fkCtx.stroke();}
+  for(let i=0;i<250;i+=25){fkCtx.beginPath();fkCtx.moveTo(0,i);fkCtx.lineTo(W,i);fkCtx.stroke();}
+  const L1=75,L2=65,CX=W/2,CY=170;
+  const ex=CX+L1*Math.cos(th1),ey=CY-L1*Math.sin(th1);
+  const tx=ex+L2*Math.cos(th1+th2),ty=ey-L2*Math.sin(th1+th2);
+  fkCtx.beginPath();fkCtx.arc(CX,CY,26,-0.05,-(th1||0.001),th1>0);fkCtx.strokeStyle='rgba(0,245,255,0.35)';fkCtx.lineWidth=1.5;fkCtx.stroke();
+  fkCtx.beginPath();fkCtx.arc(ex,ey,18,th1,th1+th2,th2<0);fkCtx.strokeStyle='rgba(255,109,0,0.35)';fkCtx.lineWidth=1.5;fkCtx.stroke();
+  const g1=fkCtx.createLinearGradient(CX,CY,ex,ey);g1.addColorStop(0,'#1a3a7a');g1.addColorStop(1,'#2563eb');
+  fkCtx.beginPath();fkCtx.moveTo(CX,CY);fkCtx.lineTo(ex,ey);fkCtx.strokeStyle=g1;fkCtx.lineWidth=8;fkCtx.lineCap='round';fkCtx.stroke();
+  const g2=fkCtx.createLinearGradient(ex,ey,tx,ty);g2.addColorStop(0,'#7a2200');g2.addColorStop(1,'#ea580c');
+  fkCtx.beginPath();fkCtx.moveTo(ex,ey);fkCtx.lineTo(tx,ty);fkCtx.strokeStyle=g2;fkCtx.lineWidth=6;fkCtx.stroke();
+  [[CX,CY,'#00f5ff',9],[ex,ey,'#00e676',7],[tx,ty,'#ff6d00',6]].forEach(([x,y,c,r])=>{fkCtx.beginPath();fkCtx.arc(x,y,r,0,Math.PI*2);fkCtx.fillStyle=c;fkCtx.shadowColor=c;fkCtx.shadowBlur=8;fkCtx.fill();fkCtx.shadowBlur=0;});
+  const sc=0.5/L1;const rx=((tx-CX)*sc).toFixed(3),ry=((CY-ty)*sc).toFixed(3);
+  document.getElementById('fkResult').textContent='Tip position:\nx = '+rx+' m\ny = '+ry+' m';
+}
+document.getElementById('fkTh1').addEventListener('input',drawFK);
+document.getElementById('fkTh2').addEventListener('input',drawFK);
+
+// ============ IK CANVAS ============
+const ikCv=document.getElementById('ikCanvas');const ikCtx=ikCv.getContext('2d');
+function drawIK(mx,my){
+  const W=ikCv.getBoundingClientRect().width||300;ikCv.width=W;ikCv.height=250;
+  ikCtx.fillStyle='#020810';ikCtx.fillRect(0,0,W,250);
+  ikCtx.strokeStyle='rgba(255,109,0,0.04)';ikCtx.lineWidth=1;
+  for(let i=0;i<W;i+=25){ikCtx.beginPath();ikCtx.moveTo(i,0);ikCtx.lineTo(i,250);ikCtx.stroke();}
+  for(let i=0;i<250;i+=25){ikCtx.beginPath();ikCtx.moveTo(0,i);ikCtx.lineTo(W,i);ikCtx.stroke();}
+  const L1=75,L2=65,CX=W/2,CY=170;
+  ikCtx.beginPath();ikCtx.arc(CX,CY,L1+L2,0,Math.PI*2);ikCtx.strokeStyle='rgba(255,109,0,0.07)';ikCtx.lineWidth=1;ikCtx.setLineDash([3,6]);ikCtx.stroke();ikCtx.setLineDash([]);
+  if(mx===undefined){mx=CX+90;my=CY-65;}
+  ikCtx.beginPath();ikCtx.arc(mx,my,6,0,Math.PI*2);ikCtx.fillStyle='#ff6d00';ikCtx.shadowColor='#ff6d00';ikCtx.shadowBlur=14;ikCtx.fill();ikCtx.shadowBlur=0;
+  ikCtx.strokeStyle='rgba(255,109,0,0.4)';ikCtx.lineWidth=1.5;
+  ikCtx.beginPath();ikCtx.moveTo(mx-11,my);ikCtx.lineTo(mx+11,my);ikCtx.stroke();
+  ikCtx.beginPath();ikCtx.moveTo(mx,my-11);ikCtx.lineTo(mx,my+11);ikCtx.stroke();
+  const dx=mx-CX,dy=CY-my,ik=ikSolve(dx,dy,L1,L2);
+  if(ik){
+    const{th1,th2}=ik;const ex=CX+L1*Math.cos(th1),ey=CY-L1*Math.sin(th1);const tx=ex+L2*Math.cos(th1+th2),ty=ey-L2*Math.sin(th1+th2);
+    const ig1=ikCtx.createLinearGradient(CX,CY,ex,ey);ig1.addColorStop(0,'#1a3a7a');ig1.addColorStop(1,'#2563eb');
+    ikCtx.beginPath();ikCtx.moveTo(CX,CY);ikCtx.lineTo(ex,ey);ikCtx.strokeStyle=ig1;ikCtx.lineWidth=8;ikCtx.lineCap='round';ikCtx.stroke();
+    const ig2=ikCtx.createLinearGradient(ex,ey,tx,ty);ig2.addColorStop(0,'#7a2200');ig2.addColorStop(1,'#ea580c');
+    ikCtx.beginPath();ikCtx.moveTo(ex,ey);ikCtx.lineTo(tx,ty);ikCtx.strokeStyle=ig2;ikCtx.lineWidth=6;ikCtx.stroke();
+    [[CX,CY,'#00f5ff',9],[ex,ey,'#00e676',7]].forEach(([x,y,c,r])=>{ikCtx.beginPath();ikCtx.arc(x,y,r,0,Math.PI*2);ikCtx.fillStyle=c;ikCtx.shadowColor=c;ikCtx.shadowBlur=8;ikCtx.fill();ikCtx.shadowBlur=0;});
+    const sc=0.5/L1;document.getElementById('ikResult').innerHTML='Target: ('+( dx*sc).toFixed(3)+', '+(dy*sc).toFixed(3)+') m\nθ₁ = '+(th1*180/Math.PI).toFixed(1)+'°   θ₂ = '+(th2*180/Math.PI).toFixed(1)+'°';
+  } else {document.getElementById('ikResult').innerHTML='⚠ OUT OF WORKSPACE';}
+}
+ikCv.addEventListener('mousemove',e=>{const r=ikCv.getBoundingClientRect();drawIK(e.clientX-r.left,e.clientY-r.top);});
+ikCv.addEventListener('click',e=>{const r=ikCv.getBoundingClientRect();drawIK(e.clientX-r.left,e.clientY-r.top);});
+
+// ============ PID STEP RESPONSE ============
+const pidCv=document.getElementById('pidCanvas');const pidCtx=pidCv.getContext('2d');
+function drawPID(){
+  const Kp=+document.getElementById('pKp').value,Ki=+document.getElementById('pKi').value,Kd=+document.getElementById('pKd').value;
+  document.getElementById('pKpv').textContent=Kp;document.getElementById('pKiv').textContent=Ki;document.getElementById('pKdv').textContent=Kd;
+  const dt=0.01,steps=600,sp=1;let pos=0,vel=0,intg=0,prv=0;const hist=[];
+  for(let i=0;i<steps;i++){const err=sp-pos;intg+=err*dt;const deriv=(err-prv)/dt;vel+=(Kp*err+Ki*intg+Kd*deriv)*dt;pos+=vel*dt;prv=err;hist.push(pos);}
+  const W=pidCv.getBoundingClientRect().width||600;pidCv.width=W;pidCv.height=210;
+  pidCtx.fillStyle='#020810';pidCtx.fillRect(0,0,W,210);
+  pidCtx.strokeStyle='rgba(0,245,255,0.04)';pidCtx.lineWidth=1;
+  for(let i=0;i<W;i+=W/10){pidCtx.beginPath();pidCtx.moveTo(i,0);pidCtx.lineTo(i,210);pidCtx.stroke();}
+  [0.25,0.5,0.75,1.0,1.25].forEach(v=>{const y=190-v*145;pidCtx.beginPath();pidCtx.moveTo(0,y);pidCtx.lineTo(W,y);pidCtx.stroke();pidCtx.fillStyle='rgba(0,245,255,0.2)';pidCtx.font='7px Orbitron,monospace';pidCtx.fillText(v.toFixed(2),2,y-2);});
+  pidCtx.beginPath();pidCtx.moveTo(0,190-145);pidCtx.lineTo(W,190-145);pidCtx.strokeStyle='rgba(255,255,255,0.18)';pidCtx.lineWidth=1;pidCtx.setLineDash([5,8]);pidCtx.stroke();pidCtx.setLineDash([]);
+  const maxV=Math.max(...hist);
+  if(maxV>1.02){pidCtx.fillStyle='rgba(255,23,68,0.05)';pidCtx.fillRect(0,190-maxV*145,W,(maxV-1)*145);}
+  const grd=pidCtx.createLinearGradient(0,0,0,210);grd.addColorStop(0,'rgba(0,245,255,0.85)');grd.addColorStop(1,'rgba(0,245,255,0.2)');
+  pidCtx.beginPath();hist.forEach((v,i)=>{const x=i/steps*W,y=190-v*145;i===0?pidCtx.moveTo(x,y):pidCtx.lineTo(x,y);});
+  pidCtx.strokeStyle=grd;pidCtx.lineWidth=2.5;pidCtx.stroke();
+  pidCtx.lineTo(W,190);pidCtx.lineTo(0,190);pidCtx.fillStyle='rgba(0,245,255,0.04)';pidCtx.fill();
+  const finalV=hist[steps-1];const os=Math.max(0,(maxV-1)*100).toFixed(1);const sse=Math.abs(finalV-1).toFixed(4);
+  let si=hist.findIndex((v,i)=>i>20&&hist.slice(i).every(vv=>Math.abs(vv-1)<0.02));
+  document.getElementById('pidStats').innerHTML='<span>Overshoot: <b style="color:'+(+os>20?'#ff1744':'#00e676')+'">'+os+'%</b></span><span>SS Error: <b style="color:'+(+sse>0.05?'#ff1744':'#00e676')+'">'+sse+'</b></span><span>Settle: <b style="color:#00f5ff">'+(si>0?(si*0.01).toFixed(2)+'s':'> 6s')+'</b></span><span>Final: <b style="color:#00f5ff">'+finalV.toFixed(3)+'</b></span>';
+}
+['pKp','pKi','pKd'].forEach(id=>document.getElementById(id).addEventListener('input',drawPID));
+
+// ============ FLOW ANIMATION ============
+const fns=document.querySelectorAll('.flow-node');let af=0;
+setInterval(()=>{fns.forEach(n=>n.classList.remove('active-node'));fns[af].classList.add('active-node');af=(af+1)%fns.length;},900);
+
+// ============ INIT ============
+function initAll(){drawFK();drawIK();drawPID();const p=getP();const r=runSim(p.Kp1,p.Ki1,p.Kd1,p.L1,p.L2);drawRLCv('rlManualCanvas',r.xs,r.ys,r.dxs,r.dys,'#00f5ff');document.getElementById('rlManRMS').textContent=r.rms.toFixed(4);document.getElementById('rlManMax').textContent=r.max.toFixed(4);}
+window.addEventListener('resize',()=>{resizeSim();initAll();});
+initAll();
+</script>
+</body>
+</html>
