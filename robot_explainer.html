@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>2-DOF Robot + PID — EEE Control Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0a0e1a;
+    --surface:  #111827;
+    --card:     #161d2e;
+    --border:   #1e2d45;
+    --accent:   #00d4ff;
+    --accent2:  #ff6b35;
+    --accent3:  #7fff6b;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --blue:     #3b82f6;
+    --purple:   #a855f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    background: radial-gradient(ellipse at 50% 0%, #0d2040 0%, var(--bg) 70%);
+    overflow: hidden;
+  }
+  .hero::before {
+    content:'';
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 39px,
+      rgba(0,212,255,0.04) 40px
+    ),
+    repeating-linear-gradient(
+      90deg, transparent, transparent 39px,
+      rgba(0,212,255,0.04) 40px
+    );
+    pointer-events:none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    padding: 0.4rem 1.2rem;
+    border-radius: 2rem;
+    margin-bottom: 2rem;
+    animation: fadeDown 0.8s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    animation: fadeDown 0.9s ease 0.1s both;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 1.5rem auto 2.5rem;
+    animation: fadeDown 0.9s ease 0.2s both;
+  }
+  .nav-pills {
+    display: flex; flex-wrap: wrap; gap: 0.7rem;
+    justify-content: center;
+    animation: fadeDown 0.9s ease 0.3s both;
+  }
+  .nav-pills a {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.55rem 1.3rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .nav-pills a:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  /* ---- CANVAS HERO DEMO ---- */
+  #heroCanvas {
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--card);
+    margin: 2.5rem auto 0;
+    display: block;
+    animation: fadeDown 1s ease 0.4s both;
+  }
+  .canvas-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---- SECTIONS ---- */
+  section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .section-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+  }
+  h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 2rem 0 0.8rem;
+    color: var(--accent);
+  }
+  p { color: #94a3b8; margin-bottom: 1rem; }
+  p strong { color: var(--text); }
+
+  /* ---- CARDS ---- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .card-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+  .card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .card p { font-size: 0.88rem; margin: 0; }
+
+  /* ---- DIVIDER ---- */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ---- MATH BLOCK ---- */
+  .math-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0.75rem;
+    padding: 1.4rem 1.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.92rem;
+    color: var(--accent);
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    line-height: 2;
+  }
+  .math-block .comment { color: var(--muted); }
+  .math-block .kw { color: var(--accent2); }
+  .math-block .val { color: var(--accent3); }
+
+  /* ---- CODE BLOCK ---- */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.4rem 1.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.82rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    line-height: 1.8;
+    position: relative;
+  }
+  .code-block .c  { color: #6a737d; }
+  .code-block .kw { color: #ff79c6; }
+  .code-block .fn { color: #50fa7b; }
+  .code-block .st { color: #f1fa8c; }
+  .code-block .nm { color: #bd93f9; }
+  .code-block .op { color: var(--accent); }
+
+  /* ---- STEP LIST ---- */
+  .step-list { list-style: none; padding: 0; }
+  .step-list li {
+    display: flex; gap: 1.2rem; align-items: flex-start;
+    padding: 1.2rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-num {
+    flex-shrink: 0;
+    width: 2.2rem; height: 2.2rem;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 700;
+    margin-top: 0.1rem;
+  }
+  .step-list li h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .step-list li p  { font-size: 0.9rem; margin: 0; }
+
+  /* ---- PID INTERACTIVE ---- */
+  .pid-demo {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+  .pid-demo h4 {
+    font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem;
+    color: var(--accent); font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .slider-row {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .slider-row label {
+    width: 2.5rem; font-family: 'Space Mono', monospace;
+    font-size: 0.85rem; color: var(--text); font-weight: 700;
+  }
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 4px;
+  }
+  .slider-val {
+    width: 3rem; text-align: right;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem; color: var(--accent);
+  }
+  #pidCanvas {
+    width: 100%; border-radius: 0.5rem;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+  .pid-desc {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem;
+    margin-top: 1.2rem;
+  }
+  .pid-tag {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.8rem;
+    text-align: center;
+  }
+  .pid-tag .label { font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; }
+  .pid-tag p { font-size: 0.78rem; margin: 0.3rem 0 0; }
+  .pid-tag.kp .label { color: var(--accent); }
+  .pid-tag.ki .label { color: var(--accent2); }
+  .pid-tag.kd .label { color: var(--accent3); }
+
+  /* ---- FK / IK VISUAL ---- */
+  .fk-ik-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    margin: 2rem 0;
+  }
+  @media(max-width:600px){ .fk-ik-grid { grid-template-columns: 1fr; } }
+  .fk-box, .ik-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .fk-box { border-top: 3px solid var(--accent); }
+  .ik-box { border-top: 3px solid var(--accent2); }
+  .fk-box canvas, .ik-box canvas { margin-top: 1rem; }
+  .box-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
+  .box-sub   { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem; }
+
+  /* ---- DH TABLE ---- */
+  table {
+    width: 100%; border-collapse: collapse; margin: 1.5rem 0;
+    font-family: 'Space Mono', monospace; font-size: 0.85rem;
+  }
+  th {
+    background: rgba(0,212,255,0.1);
+    color: var(--accent); padding: 0.8rem 1rem;
+    text-align: center; border: 1px solid var(--border);
+    font-size: 0.78rem; letter-spacing: 0.05em;
+  }
+  td {
+    padding: 0.7rem 1rem; text-align: center;
+    border: 1px solid var(--border); color: var(--text);
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  /* ---- CALLOUT ---- */
+  .callout {
+    display: flex; gap: 1rem;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 0.75rem;
+    padding: 1.2rem 1.4rem;
+    margin: 1.5rem 0;
+    align-items: flex-start;
+  }
+  .callout-icon { font-size: 1.4rem; flex-shrink:0; margin-top:0.1rem; }
+  .callout p { margin: 0; font-size: 0.9rem; color: var(--text); }
+  .callout.warn { background: rgba(255,107,53,0.06); border-color: rgba(255,107,53,0.2); }
+  .callout.good { background: rgba(127,255,107,0.06); border-color: rgba(127,255,107,0.2); }
+
+  /* ---- FLOW DIAGRAM ---- */
+  .flow {
+    display: flex; flex-direction: column; gap: 0; margin: 2rem 0;
+    position: relative;
+  }
+  .flow-item {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 0.75rem; padding: 1rem 1.4rem;
+    margin-bottom: 0.3rem; position: relative; z-index:1;
+    transition: border-color 0.2s;
+  }
+  .flow-item:hover { border-color: var(--accent); }
+  .flow-arrow {
+    text-align: center; color: var(--accent);
+    font-size: 1.2rem; margin: 0; line-height: 1;
+  }
+  .flow-num {
+    width: 1.8rem; height: 1.8rem; border-radius: 50%;
+    background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    color: var(--accent); font-weight: 700; flex-shrink: 0;
+  }
+  .flow-text h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .flow-text p  { font-size: 0.83rem; color: var(--muted); margin: 0; }
+
+  /* ---- FOOTER ---- */
+  footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  @keyframes fadeDown {
+    from { opacity:0; transform: translateY(-16px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ========== HERO ========== -->
+<div class="hero">
+  <div class="hero-badge">EEE CONTROL SYSTEMS — INTERACTIVE GUIDE</div>
+  <h1>2-DOF Planar Robot<br/><span>Kinematics & PID Control</span></h1>
+  <p>Everything explained from first principles — Forward Kinematics, Inverse Kinematics, and PID controllers — with live interactive demos.</p>
+  <nav class="nav-pills">
+    <a href="#overview">Overview</a>
+    <a href="#dh">DH Parameters</a>
+    <a href="#fk">Forward Kinematics</a>
+    <a href="#ik">Inverse Kinematics</a>
+    <a href="#pid">PID Controller</a>
+    <a href="#loop">Control Loop</a>
+    <a href="#matlab">MATLAB Code</a>
+  </nav>
+  <canvas id="heroCanvas" width="480" height="220"></canvas>
+  <p class="canvas-label">LIVE DEMO — ROBOT TRACING A CIRCLE TRAJECTORY</p>
+</div>
+
+<!-- ========== OVERVIEW ========== -->
+<section id="overview">
+  <div class="section-tag">01 — Overview</div>
+  <h2>What Are We Building?</h2>
+  <p>A <strong>2-DOF (2 Degrees of Freedom) planar RR robot</strong> is the simplest robot arm that can reach any point in a 2D plane. "RR" means two <strong>Revolute</strong> joints — joints that rotate. Think of your shoulder and elbow.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🦾</div>
+      <h4>The Robot</h4>
+      <p>Two rigid links connected by two rotary joints. Joint 1 at the base, Joint 2 at the elbow. The tip is called the <strong>end-effector</strong>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📐</div>
+      <h4>Kinematics</h4>
+      <p>The math that maps between <strong>joint angles (θ₁, θ₂)</strong> and <strong>tip position (x, y)</strong>. Forward and Inverse directions.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎛️</div>
+      <h4>PID Control</h4>
+      <p>A feedback controller that computes how much to <strong>move each joint</strong> to minimize the error between desired and actual angle.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <h4>Trajectory Tracking</h4>
+      <p>The full system goal: make the tip follow a <strong>predefined path</strong> (circle, figure-8, rectangle) smoothly and accurately.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-icon">💡</div>
+    <p>As an EEE control student, this project touches <strong>four core topics at once</strong>: rigid body mechanics, coordinate transforms, closed-loop feedback control, and discrete-time simulation — all in MATLAB.</p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== DH PARAMETERS ========== -->
+<section id="dh">
+  <div class="section-tag">02 — Robot Model</div>
+  <h2>DH Parameters & Robot Geometry</h2>
+  <p>The <strong>Denavit-Hartenberg (DH) convention</strong> is a systematic method to describe any robot's geometry using just 4 parameters per joint. For our planar robot:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Joint (i)</th>
+        <th>θᵢ (Angle)</th>
+        <th>dᵢ (Offset)</th>
+        <th>aᵢ (Length)</th>
+        <th>αᵢ (Twist)</th>
+        <th>Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td style="color:var(--accent)">θ₁ (variable)</td>
+        <td>0</td>
+        <td style="color:var(--accent3)">L₁ = 0.5 m</td>
+        <td>0°</td>
+        <td>Shoulder joint</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td style="color:var(--accent)">θ₂ (variable)</td>
+        <td>0</td>
+        <td style="color:var(--accent3)">L₂ = 0.5 m</td>
+        <td>0°</td>
+        <td>Elbow joint</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>What each parameter means:</strong></p>
+  <ul style="color:#94a3b8; padding-left:1.4rem; margin-bottom:1rem; line-height:2.2">
+    <li><strong style="color:var(--accent)">θᵢ</strong> — Joint angle (what the motor controls). This is our <em>variable</em>.</li>
+    <li><strong style="color:var(--text)">dᵢ</strong> — Link offset along Z-axis. Zero for planar robots.</li>
+    <li><strong style="color:var(--accent3)">aᵢ</strong> — Link length along X-axis. L₁ and L₂ here.</li>
+    <li><strong style="color:var(--text)">αᵢ</strong> — Link twist about X-axis. Zero for planar robots (all motion in XY plane).</li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-icon">📏</div>
+    <p>With d=0 and α=0° for both joints, this simplifies to a purely planar robot. The only things that matter are the two angles θ₁, θ₂ and the two lengths L₁, L₂ = 0.5 m each.</p>
+  </div>
+
+  <h3>Workspace</h3>
+  <p>The robot can reach any point within an <strong>annular ring</strong>:</p>
+  <div class="math-block">
+    <span class="comment">// Reachability condition</span><br/>
+    |L₁ − L₂| ≤ √(x² + y²) ≤ L₁ + L₂<br/><br/>
+    <span class="comment">// For our robot (L₁=L₂=0.5):</span><br/>
+    <span class="val">0.0 m</span> ≤ distance_from_origin ≤ <span class="val">1.0 m</span>
+  </div>
+  <p>Any (x, y) target further than 1.0 m from the origin is <strong>unreachable</strong>. That's why we keep the trajectory center at (0.5, 0.3) with radius 0.2 — safely inside the workspace.</p>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== FORWARD KINEMATICS ========== -->
+<section id="fk">
+  <div class="section-tag">03 — Forward Kinematics</div>
+  <h2>Forward Kinematics (FK)</h2>
+  <p><strong>Question:</strong> Given joint angles θ₁ and θ₂, where is the end-effector?</p>
+  <p>This is the <em>easy</em> direction — just basic trigonometry applied step by step along the kinematic chain.</p>
+
+  <div class="fk-ik-grid">
+    <div class="fk-box">
+      <div class="box-title" style="color:var(--accent)">Forward Kinematics</div>
+      <div class="box-sub">Angles → Position</div>
+      <canvas id="fkCanvas" width="260" height="220"></canvas>
+      <div style="margin-top:0.8rem">
+        <label style="font-size:0.8rem;color:var(--muted);font-family:'Space Mono',monospace">θ₁: <span id="fkTh1Val">30°</span></label><br/>
+        <input type="range" id="fkTh1" min="-150" max="150" value="30" style="width:100%;accent-color:var(--accent);margin:0.3rem 0"/>
+        <label style="font-size:0.8rem;color:var(--muted);font-family:'Space Mono',monospace">θ₂: <span id="fkTh2Val">45°</span></label><br/>
+        <input type="range" id="fkTh2" min="-150" max="150" value="45" style="width:100%;accent-color:var(--accent2);margin:0.3rem 0"/>
+        <div id="fkResult" style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent3);margin-top:0.5rem;text-align:left"></div>
+      </div>
+    </div>
+    <div class="ik-box">
+      <div class="box-title" style="color:var(--accent2)">Inverse Kinematics</div>
+      <div class="box-sub">Position → Angles (click/drag on canvas)</div>
+      <canvas id="ikCanvas" width="260" height="220" style="cursor:crosshair"></canvas>
+      <div id="ikResult" style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent3);margin-top:0.8rem;text-align:left"></div>
+    </div>
+  </div>
+
+  <h3>The FK Equations</h3>
+  <p>We compute two intermediate points — the elbow and the tip — by summing up the contributions of each link:</p>
+
+  <div class="math-block">
+    <span class="comment">// Elbow position (end of Link 1)</span><br/>
+    elbow_x = <span class="kw">L₁</span> · cos(θ₁)<br/>
+    elbow_y = <span class="kw">L₁</span> · sin(θ₁)<br/><br/>
+    <span class="comment">// End-effector position (end of Link 2)</span><br/>
+    x = <span class="kw">L₁</span>·cos(θ₁) + <span class="kw">L₂</span>·cos(θ₁ + θ₂)<br/>
+    y = <span class="kw">L₁</span>·sin(θ₁) + <span class="kw">L₂</span>·sin(θ₁ + θ₂)
+  </div>
+
+  <div class="callout">
+    <div class="callout-icon">🧠</div>
+    <p>Notice that Link 2's angle is <strong>(θ₁ + θ₂)</strong>, not just θ₂. This is because θ₂ is measured <em>relative to Link 1</em>. The angle of Link 2 in world coordinates is their sum.</p>
+  </div>
+
+  <h3>In MATLAB (from your code)</h3>
+  <div class="code-block">
+<span class="c">% Forward Kinematics — computed every time step</span>
+x_act(k) = <span class="nm">L1</span>*<span class="fn">cos</span>(theta1_act(k)) + <span class="nm">L2</span>*<span class="fn">cos</span>(theta1_act(k) + theta2_act(k));
+y_act(k) = <span class="nm">L1</span>*<span class="fn">sin</span>(theta1_act(k)) + <span class="nm">L2</span>*<span class="fn">sin</span>(theta1_act(k) + theta2_act(k));
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== INVERSE KINEMATICS ========== -->
+<section id="ik">
+  <div class="section-tag">04 — Inverse Kinematics</div>
+  <h2>Inverse Kinematics (IK)</h2>
+  <p><strong>Question:</strong> Given a desired position (x, y), what angles θ₁ and θ₂ do the joints need?</p>
+  <p>This is the <em>hard</em> direction. It has multiple solutions, and sometimes no solution at all. We use the <strong>geometric method</strong> with the Law of Cosines.</p>
+
+  <h3>Step 1 — Solve θ₂ (elbow angle)</h3>
+  <p>Draw a triangle from the base to the elbow to the tip. The side lengths are L₁, L₂, and d = √(x²+y²). By the Law of Cosines:</p>
+
+  <div class="math-block">
+    d² = L₁² + L₂² − 2·L₁·L₂·cos(π − θ₂)<br/>
+    <span class="comment">// Since cos(π−θ₂) = −cos(θ₂):</span><br/>
+    d² = L₁² + L₂² + 2·L₁·L₂·cos(θ₂)<br/><br/>
+    <span class="comment">// Rearrange for cos(θ₂):</span><br/>
+    cos(θ₂) = <span class="kw">(x² + y² − L₁² − L₂²)</span> / <span class="val">(2·L₁·L₂)</span><br/><br/>
+    <span class="comment">// Elbow-up solution (positive sin):</span><br/>
+    sin(θ₂) = +√(1 − cos²(θ₂))<br/>
+    θ₂ = <span class="fn">atan2</span>(sin(θ₂), cos(θ₂))
+  </div>
+
+  <h3>Step 2 — Solve θ₁ (shoulder angle)</h3>
+  <div class="math-block">
+    k₁ = L₁ + L₂·cos(θ₂)<br/>
+    k₂ = L₂·sin(θ₂)<br/><br/>
+    θ₁ = <span class="fn">atan2</span>(y, x) − <span class="fn">atan2</span>(k₂, k₁)
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <p><strong>Two solutions exist!</strong> Elbow-up uses +√(1−c²), elbow-down uses −√(1−c²). Your MATLAB code always picks elbow-up. In real robots, you choose based on avoiding obstacles.</p>
+  </div>
+
+  <h3>In MATLAB (inlined in your code)</h3>
+  <div class="code-block">
+<span class="c">% Step 1: cos(theta2) from law of cosines</span>
+c2 = (x_k^<span class="nm">2</span> + y_k^<span class="nm">2</span> - <span class="nm">L1</span>^<span class="nm">2</span> - <span class="nm">L2</span>^<span class="nm">2</span>) / (<span class="nm">2</span>*<span class="nm">L1</span>*<span class="nm">L2</span>);
+c2 = <span class="fn">max</span>(-<span class="nm">1</span>, <span class="fn">min</span>(<span class="nm">1</span>, c2));   <span class="c">% clamp: prevent NaN from floating point</span>
+
+<span class="c">% Elbow-up: positive square root for sin(theta2)</span>
+s2  = <span class="fn">sqrt</span>(<span class="nm">1</span> - c2^<span class="nm">2</span>);
+th2 = <span class="fn">atan2</span>(s2, c2);
+
+<span class="c">% Step 2: solve theta1</span>
+k1  = <span class="nm">L1</span> + <span class="nm">L2</span>*c2;
+k2  = <span class="nm">L2</span>*s2;
+th1 = <span class="fn">atan2</span>(y_k, x_k) - <span class="fn">atan2</span>(k2, k1);
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== PID ========== -->
+<section id="pid">
+  <div class="section-tag">05 — PID Controller</div>
+  <h2>PID Controller — Deep Dive</h2>
+  <p>PID is a <strong>feedback control law</strong>. At every time step, it looks at the current error and computes a corrective output. We run one PID controller <em>per joint</em>.</p>
+
+  <div class="pid-desc">
+    <div class="pid-tag kp">
+      <div class="label">P</div>
+      <div style="font-size:0.7rem;color:var(--muted);font-family:'Space Mono',monospace">Proportional</div>
+      <p>Output ∝ current error. Bigger error → bigger correction. Fast response but can overshoot.</p>
+    </div>
+    <div class="pid-tag ki">
+      <div class="label">I</div>
+      <div style="font-size:0.7rem;color:var(--muted);font-family:'Space Mono',monospace">Integral</div>
+      <p>Output ∝ accumulated error. Eliminates steady-state offset. Can cause windup if too large.</p>
+    </div>
+    <div class="pid-tag kd">
+      <div class="label">D</div>
+      <div style="font-size:0.7rem;color:var(--muted);font-family:'Space Mono',monospace">Derivative</div>
+      <p>Output ∝ rate of error change. Acts like a brake, damping oscillations. Sensitive to noise.</p>
+    </div>
+  </div>
+
+  <div class="math-block" style="margin-top:1.5rem">
+    <span class="comment">// Continuous-time PID:</span><br/>
+    u(t) = <span class="kw">Kp</span>·e(t) + <span class="kw">Ki</span>·∫e(τ)dτ + <span class="kw">Kd</span>·(de/dt)<br/><br/>
+    <span class="comment">// Discrete-time (Euler, what MATLAB uses):</span><br/>
+    error      = θ_desired − θ_actual<br/>
+    integral  += error · dt<br/>
+    derivative = (error − prev_error) / dt<br/>
+    u          = <span class="kw">Kp</span>·error + <span class="kw">Ki</span>·integral + <span class="kw">Kd</span>·derivative
+  </div>
+
+  <h3>Interactive PID Tuner</h3>
+  <p>Drag the sliders to see how each gain affects the step response. Watch for overshoot, oscillation, and steady-state error.</p>
+
+  <div class="pid-demo">
+    <h4>⚡ LIVE STEP RESPONSE SIMULATOR</h4>
+    <div class="slider-row">
+      <label>Kp</label>
+      <input type="range" id="slKp" min="1" max="100" value="40"/>
+      <span class="slider-val" id="valKp">40</span>
+    </div>
+    <div class="slider-row">
+      <label>Ki</label>
+      <input type="range" id="slKi" min="0" max="30" value="5"/>
+      <span class="slider-val" id="valKi">5</span>
+    </div>
+    <div class="slider-row">
+      <label>Kd</label>
+      <input type="range" id="slKd" min="0" max="30" value="10"/>
+      <span class="slider-val" id="valKd">10</span>
+    </div>
+    <canvas id="pidCanvas" height="180"></canvas>
+    <div id="pidStats" style="font-family:'Space Mono',monospace;font-size:0.78rem;color:var(--muted);margin-top:0.7rem;display:flex;gap:2rem;flex-wrap:wrap"></div>
+  </div>
+
+  <div class="callout good">
+    <div class="callout-icon">✅</div>
+    <p><strong>Your MATLAB gains:</strong> Kp1=150, Ki1=6, Kd1=20 for Joint 1. These were tuned to give fast response with minimal overshoot. Try setting Kd=0 in the sim above to see why derivative damping matters!</p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== CONTROL LOOP ========== -->
+<section id="loop">
+  <div class="section-tag">06 — Full System</div>
+  <h2>The Complete Control Loop</h2>
+  <p>Here's how all the pieces connect together every single time step (every 10 ms):</p>
+
+  <div class="flow">
+    <div class="flow-item">
+      <div class="flow-num">1</div>
+      <div class="flow-text">
+        <h4>Trajectory Generator</h4>
+        <p>Outputs desired tip position (xd, yd) at time t. Circle: xd = cx + r·cos(ωt)</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-item">
+      <div class="flow-num">2</div>
+      <div class="flow-text">
+        <h4>Inverse Kinematics</h4>
+        <p>Converts (xd, yd) → desired joint angles (θ₁_des, θ₂_des) using law of cosines</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-item">
+      <div class="flow-num">3</div>
+      <div class="flow-text">
+        <h4>PID Controller — Joint 1 & Joint 2</h4>
+        <p>error = θ_desired − θ_actual → compute u = Kp·e + Ki·∫e + Kd·ė</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-item">
+      <div class="flow-num">4</div>
+      <div class="flow-text">
+        <h4>Joint Dynamics (Plant)</h4>
+        <p>θ_actual(k) = θ_actual(k−1) + u·dt². Simplified 2nd-order integrator model.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-item">
+      <div class="flow-num">5</div>
+      <div class="flow-text">
+        <h4>Forward Kinematics (Feedback)</h4>
+        <p>Converts actual (θ₁, θ₂) → actual tip position (x_act, y_act) for plotting</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↺ repeat every dt = 0.01 s</div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-icon">🔄</div>
+    <p>This is a <strong>joint-space PID controller</strong>. The IK runs <em>offline</em> (pre-computed before simulation). The PID only sees joint angles, not (x,y) directly. An alternative is <strong>task-space control</strong> where the PID operates on x,y errors directly using the Jacobian — more complex but more flexible.</p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ========== MATLAB ========== -->
+<section id="matlab">
+  <div class="section-tag">07 — MATLAB Code Walkthrough</div>
+  <h2>Your MATLAB Code — Line by Line</h2>
+
+  <h3>Section 1: Trajectories</h3>
+  <p>All 3 shapes are just parametric equations. <code style="background:var(--surface);padding:0.2rem 0.5rem;border-radius:0.3rem;font-family:'Space Mono',monospace;font-size:0.82rem;color:var(--accent)">omega = 2π/T</code> ensures one full loop per simulation.</p>
+  <div class="code-block">
+<span class="c">% Circle: standard parametric form</span>
+xd_circle = cx + r * <span class="fn">cos</span>(omega * time);  <span class="c">% x oscillates</span>
+yd_circle = cy + r * <span class="fn">sin</span>(omega * time);  <span class="c">% y oscillates 90° offset</span>
+
+<span class="c">% Figure-8: y runs at DOUBLE frequency</span>
+xd_inf = cx + r     * <span class="fn">sin</span>(omega * time);
+yd_inf = cy + (r/<span class="nm">2</span>) * <span class="fn">sin</span>(<span class="nm">2</span>*omega * time);  <span class="c">% 2× = figure-8</span>
+  </div>
+
+  <h3>Section 2: PID Loop Structure</h3>
+  <p>The core PID loop runs for each joint independently at every time step k:</p>
+  <div class="code-block">
+<span class="kw">for</span> k = <span class="nm">2</span>:N
+    <span class="c">% === JOINT 1 ===</span>
+    e1      = theta1_des(k) - theta1_act(k<span class="op">-</span><span class="nm">1</span>);   <span class="c">% current error</span>
+    e1_int  = e1_int + e1*dt;                   <span class="c">% integral (sum of past errors)</span>
+    e1_dot  = (e1 - e1_prev)/dt;                <span class="c">% derivative (rate of change)</span>
+    u1      = <span class="nm">Kp1</span>*e1 + <span class="nm">Ki1</span>*e1_int + <span class="nm">Kd1</span>*e1_dot; <span class="c">% PID output</span>
+    e1_prev = e1;                               <span class="c">% save for next derivative</span>
+
+    <span class="c">% === PLANT: simplified joint dynamics ===</span>
+    theta1_act(k) = theta1_act(k<span class="op">-</span><span class="nm">1</span>) + u1*dt^<span class="nm">2</span>;   <span class="c">% integrate acceleration</span>
+
+    <span class="c">% === FORWARD KINEMATICS: get actual tip position ===</span>
+    x_act(k) = <span class="nm">L1</span>*<span class="fn">cos</span>(theta1_act(k)) + <span class="nm">L2</span>*<span class="fn">cos</span>(theta1_act(k)+theta2_act(k));
+<span class="kw">end</span>
+  </div>
+
+  <h3>Why <code style="font-size:0.85rem">u * dt²</code>?</h3>
+  <p>The simplified plant model assumes <strong>unit inertia</strong>: the control signal u is treated as angular acceleration. Integrating twice:</p>
+  <div class="math-block">
+    θ̈ = u  →  θ(k) = θ(k-1) + θ̇·dt  →  θ(k) ≈ θ(k-1) + u·dt²<br/><br/>
+    <span class="comment">// In a real robot: J·θ̈ + B·θ̇ = τ (torque)
+// Here we simplify to: θ̈ = u (J=1, B=0)</span>
+  </div>
+
+  <ul class="step-list">
+    <li>
+      <div class="step-num">Q</div>
+      <div><h4>Why two separate PID controllers?</h4><p>Each joint is an independent actuator. In a decoupled model (which we use here), we treat them separately. A more advanced approach would account for coupling torques using the full dynamic model (Lagrangian/Newton-Euler).</p></div>
+    </li>
+    <li>
+      <div class="step-num">Q</div>
+      <div><h4>Why pre-compute IK before the loop?</h4><p>Because our trajectory is deterministic (known ahead of time). In a real robot reacting to unknown environments, IK would need to run in real-time every loop.</p></div>
+    </li>
+    <li>
+      <div class="step-num">Q</div>
+      <div><h4>What does RMS error mean?</h4><p>Root Mean Square error = √(mean of squared errors). It's the standard measure of tracking accuracy. Lower is better. Typical values in our sim: &lt;5 mm.</p></div>
+    </li>
+  </ul>
+</section>
+
+<footer>
+  2-DOF Robot — EEE Control Systems Interactive Guide &nbsp;·&nbsp; Built for control students
+</footer>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+// =============================================
+// HERO CANVAS — Robot tracing a circle
+// =============================================
+const hc = document.getElementById('heroCanvas');
+const hx = hc.getContext('2d');
+const L1=90, L2=80, CX=240, CY=130;
+let hAngle = 0;
+
+function drawHero() {
+  hx.clearRect(0,0,hc.width,hc.height);
+
+  // Grid
+  hx.strokeStyle='rgba(0,212,255,0.05)'; hx.lineWidth=1;
+  for(let i=0;i<hc.width;i+=30){hx.beginPath();hx.moveTo(i,0);hx.lineTo(i,hc.height);hx.stroke();}
+  for(let i=0;i<hc.height;i+=30){hx.beginPath();hx.moveTo(0,i);hx.lineTo(hc.width,i);hx.stroke();}
+
+  // Desired circle
+  const r=60, trCX=CX+50, trCY=CY-10;
+  hx.beginPath(); hx.arc(trCX,trCY,r,0,Math.PI*2);
+  hx.strokeStyle='rgba(255,255,255,0.15)'; hx.lineWidth=1.5; hx.setLineDash([4,4]); hx.stroke(); hx.setLineDash([]);
+
+  // Target position
+  const tx = trCX + r*Math.cos(hAngle);
+  const ty = trCY + r*Math.sin(hAngle);
+
+  // IK
+  const dx=tx-CX, dy=ty-CY;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist>0 && dist<(L1+L2)*0.99){
+    let c2=(dx*dx+dy*dy-L1*L1-L2*L2)/(2*L1*L2);
+    c2=Math.max(-1,Math.min(1,c2));
+    const s2=Math.sqrt(1-c2*c2);
+    const th2=Math.atan2(s2,c2);
+    const k1=L1+L2*c2, k2=L2*s2;
+    const th1=Math.atan2(dy,dx)-Math.atan2(k2,k1);
+    const ex=CX+L1*Math.cos(th1), ey=CY+L1*Math.sin(th1);
+    const tipX=ex+L2*Math.cos(th1+th2), tipY=ey+L2*Math.sin(th1+th2);
+
+    // Link 1
+    hx.beginPath(); hx.moveTo(CX,CY); hx.lineTo(ex,ey);
+    hx.strokeStyle='#3b82f6'; hx.lineWidth=7; hx.lineCap='round'; hx.stroke();
+    // Link 2
+    hx.beginPath(); hx.moveTo(ex,ey); hx.lineTo(tipX,tipY);
+    hx.strokeStyle='#ff6b35'; hx.lineWidth=6; hx.stroke();
+    // Joints
+    [[CX,CY,'#1e293b','#94a3b8',10],[ex,ey,'#1e293b','#22c55e',8],[tipX,tipY,'#1e293b','#ef4444',7]].forEach(([x,y,f,s,r])=>{
+      hx.beginPath();hx.arc(x,y,r,0,Math.PI*2);hx.fillStyle=f;hx.fill();
+      hx.strokeStyle=s;hx.lineWidth=2;hx.stroke();
+    });
+    // Target cross
+    hx.strokeStyle='rgba(255,255,255,0.4)'; hx.lineWidth=1.5;
+    hx.beginPath();hx.moveTo(tx-7,ty);hx.lineTo(tx+7,ty);hx.stroke();
+    hx.beginPath();hx.moveTo(tx,ty-7);hx.lineTo(tx,ty+7);hx.stroke();
+  }
+
+  // Labels
+  hx.fillStyle='rgba(0,212,255,0.7)'; hx.font='11px Space Mono, monospace';
+  hx.fillText('Joint 0 (Base)', CX+12, CY+4);
+  hx.fillStyle='rgba(34,197,94,0.8)';
+  hx.fillText('Joint 1', CX+L1*Math.cos(0.52)+8, CY+L1*Math.sin(0.52)-4);
+
+  hAngle += 0.018;
+  requestAnimationFrame(drawHero);
+}
+drawHero();
+
+// =============================================
+// FK CANVAS — interactive slider demo
+// =============================================
+const fc = document.getElementById('fkCanvas');
+const fx = fc.getContext('2d');
+const FL1=80, FL2=70, FCX=130, FCY=140;
+
+function drawFK(){
+  const th1=parseFloat(document.getElementById('fkTh1').value)*Math.PI/180;
+  const th2=parseFloat(document.getElementById('fkTh2').value)*Math.PI/180;
+  document.getElementById('fkTh1Val').textContent=Math.round(th1*180/Math.PI)+'°';
+  document.getElementById('fkTh2Val').textContent=Math.round(th2*180/Math.PI)+'°';
+
+  fx.clearRect(0,0,fc.width,fc.height);
+  fx.strokeStyle='rgba(0,212,255,0.06)';fx.lineWidth=1;
+  for(let i=0;i<fc.width;i+=20){fx.beginPath();fx.moveTo(i,0);fx.lineTo(i,fc.height);fx.stroke();}
+  for(let i=0;i<fc.height;i+=20){fx.beginPath();fx.moveTo(0,i);fx.lineTo(fc.width,i);fx.stroke();}
+
+  // Axes
+  fx.strokeStyle='rgba(255,255,255,0.1)';fx.lineWidth=1;
+  fx.beginPath();fx.moveTo(0,FCY);fx.lineTo(fc.width,FCY);fx.stroke();
+  fx.beginPath();fx.moveTo(FCX,0);fx.lineTo(FCX,fc.height);fx.stroke();
+
+  const ex=FCX+FL1*Math.cos(th1), ey=FCY-FL1*Math.sin(th1);
+  const tipX=ex+FL2*Math.cos(th1+th2), tipY=ey-FL2*Math.sin(th1+th2);
+
+  // Link 1
+  fx.beginPath();fx.moveTo(FCX,FCY);fx.lineTo(ex,ey);
+  fx.strokeStyle='#3b82f6';fx.lineWidth=6;fx.lineCap='round';fx.stroke();
+  // Link 2
+  fx.beginPath();fx.moveTo(ex,ey);fx.lineTo(tipX,tipY);
+  fx.strokeStyle='#ff6b35';fx.lineWidth=5;fx.stroke();
+  // Joints
+  [[FCX,FCY,'#94a3b8',9],[ex,ey,'#22c55e',7],[tipX,tipY,'#ef4444',7]].forEach(([x,y,c,r])=>{
+    fx.beginPath();fx.arc(x,y,r,0,Math.PI*2);
+    fx.fillStyle=c;fx.fill();
+  });
+
+  // Result
+  const scale=0.5/FL1;
+  const rx=((tipX-FCX)*scale).toFixed(3);
+  const ry=(-(tipY-FCY)*scale).toFixed(3);
+  document.getElementById('fkResult').innerHTML=
+    `x = <span style="color:#7fff6b">${rx}</span> m<br>y = <span style="color:#7fff6b">${ry}</span> m`;
+}
+document.getElementById('fkTh1').addEventListener('input',drawFK);
+document.getElementById('fkTh2').addEventListener('input',drawFK);
+drawFK();
+
+// =============================================
+// IK CANVAS — click/drag demo
+// =============================================
+const ic = document.getElementById('ikCanvas');
+const ix = ic.getContext('2d');
+const IL1=80, IL2=70, ICX=130, ICY=140;
+
+function drawIK(mx,my){
+  ix.clearRect(0,0,ic.width,ic.height);
+  ix.strokeStyle='rgba(255,107,53,0.06)';ix.lineWidth=1;
+  for(let i=0;i<ic.width;i+=20){ix.beginPath();ix.moveTo(i,0);ix.lineTo(i,ic.height);ix.stroke();}
+  for(let i=0;i<ic.height;i+=20){ix.beginPath();ix.moveTo(0,i);ix.lineTo(ic.width,i);ix.stroke();}
+
+  // Workspace ring
+  ix.beginPath();ix.arc(ICX,ICY,IL1+IL2,0,Math.PI*2);
+  ix.strokeStyle='rgba(255,107,53,0.15)';ix.lineWidth=1;ix.setLineDash([3,3]);ix.stroke();ix.setLineDash([]);
+
+  // Axes
+  ix.strokeStyle='rgba(255,255,255,0.1)';ix.lineWidth=1;
+  ix.beginPath();ix.moveTo(0,ICY);ix.lineTo(ic.width,ICY);ix.stroke();
+  ix.beginPath();ix.moveTo(ICX,0);ix.lineTo(ICX,ic.height);ix.stroke();
+
+  if(mx===undefined){mx=ICX+90;my=ICY-60;}
+  const dx=mx-ICX, dy=my-ICY;
+  const d=Math.sqrt(dx*dx+dy*dy);
+
+  // Target
+  ix.beginPath();ix.arc(mx,my,5,0,Math.PI*2);
+  ix.fillStyle='#ff6b35';ix.fill();
+  ix.strokeStyle='rgba(255,107,53,0.4)';ix.lineWidth=1;
+  ix.beginPath();ix.moveTo(mx-10,my);ix.lineTo(mx+10,my);ix.stroke();
+  ix.beginPath();ix.moveTo(mx,my-10);ix.lineTo(mx,my+10);ix.stroke();
+
+  const maxR=(IL1+IL2)*0.99;
+  if(d>0 && d<maxR){
+    let c2=(dx*dx+dy*dy-IL1*IL1-IL2*IL2)/(2*IL1*IL2);
+    c2=Math.max(-1,Math.min(1,c2));
+    const s2=Math.sqrt(1-c2*c2);
+    const th2=Math.atan2(s2,c2);
+    const k1=IL1+IL2*c2, k2=IL2*s2;
+    const th1=Math.atan2(-dy,dx)-Math.atan2(k2,k1);
+    const ex=ICX+IL1*Math.cos(th1), ey=ICY+IL1*Math.sin(th1);
+    const tipX=ex+IL2*Math.cos(th1+th2), tipY=ey+IL2*Math.sin(th1+th2);
+
+    ix.beginPath();ix.moveTo(ICX,ICY);ix.lineTo(ex,ey);
+    ix.strokeStyle='#3b82f6';ix.lineWidth=6;ix.lineCap='round';ix.stroke();
+    ix.beginPath();ix.moveTo(ex,ey);ix.lineTo(tipX,tipY);
+    ix.strokeStyle='#ff6b35';ix.lineWidth=5;ix.stroke();
+    [[ICX,ICY,'#94a3b8',9],[ex,ey,'#22c55e',7]].forEach(([x,y,c,r])=>{
+      ix.beginPath();ix.arc(x,y,r,0,Math.PI*2);ix.fillStyle=c;ix.fill();
+    });
+
+    const scale=0.5/IL1;
+    const rx=((mx-ICX)*scale).toFixed(3);
+    const ry=((ICY-my)*scale).toFixed(3);
+    const t1d=(th1*180/Math.PI).toFixed(1);
+    const t2d=(th2*180/Math.PI).toFixed(1);
+    document.getElementById('ikResult').innerHTML=
+      `Target: x=<span style="color:#7fff6b">${rx}</span>m, y=<span style="color:#7fff6b">${ry}</span>m<br>`+
+      `θ₁ = <span style="color:#00d4ff">${t1d}°</span>, θ₂ = <span style="color:#00d4ff">${t2d}°</span>`;
+  } else {
+    document.getElementById('ikResult').innerHTML=
+      `<span style="color:#ff6b35">⚠ Out of workspace (r=${d.toFixed(0)}px, max=${maxR.toFixed(0)}px)</span>`;
+  }
+}
+ic.addEventListener('mousemove',e=>{const r=ic.getBoundingClientRect();drawIK(e.clientX-r.left,e.clientY-r.top);});
+ic.addEventListener('click',e=>{const r=ic.getBoundingClientRect();drawIK(e.clientX-r.left,e.clientY-r.top);});
+drawIK();
+
+// =============================================
+// PID STEP RESPONSE SIMULATOR
+// =============================================
+const pc = document.getElementById('pidCanvas');
+const px = pc.getContext('2d');
+
+function simPID(){
+  const Kp=parseFloat(document.getElementById('slKp').value);
+  const Ki=parseFloat(document.getElementById('slKi').value);
+  const Kd=parseFloat(document.getElementById('slKd').value);
+  document.getElementById('valKp').textContent=Kp;
+  document.getElementById('valKi').textContent=Ki;
+  document.getElementById('valKd').textContent=Kd;
+
+  const dt=0.01, steps=500, setpoint=1.0;
+  let pos=0, vel=0, integral=0, prevErr=0;
+  const hist=[];
+
+  for(let i=0;i<steps;i++){
+    const err=setpoint-pos;
+    integral+=err*dt;
+    const deriv=(err-prevErr)/dt;
+    const u=Kp*err+Ki*integral+Kd*deriv;
+    prevErr=err;
+    vel+=u*dt;
+    pos+=vel*dt;
+    hist.push(pos);
+  }
+
+  const W=pc.getBoundingClientRect().width||700;
+  pc.width=W; pc.height=180;
+  px.clearRect(0,0,W,180);
+
+  // BG
+  px.fillStyle='#0d1117';px.fillRect(0,0,W,180);
+  // Grid
+  px.strokeStyle='rgba(255,255,255,0.04)';px.lineWidth=1;
+  for(let i=0;i<W;i+=W/10){px.beginPath();px.moveTo(i,0);px.lineTo(i,180);px.stroke();}
+  for(let i=0;i<180;i+=30){px.beginPath();px.moveTo(0,i);px.lineTo(W,i);px.stroke();}
+
+  // Setpoint line
+  px.strokeStyle='rgba(255,255,255,0.2)';px.lineWidth=1;px.setLineDash([5,5]);
+  px.beginPath();px.moveTo(0,20);px.lineTo(W,20);px.stroke();px.setLineDash([]);
+  px.fillStyle='rgba(255,255,255,0.3)';px.font='10px Space Mono,monospace';
+  px.fillText('setpoint = 1.0',8,15);
+
+  // Response curve
+  const yScale=140, yOff=160;
+  px.beginPath();
+  hist.forEach((v,i)=>{
+    const x=i/steps*W;
+    const y=yOff-v*yScale;
+    i===0?px.moveTo(x,y):px.lineTo(x,y);
+  });
+  px.strokeStyle='#00d4ff';px.lineWidth=2.5;px.stroke();
+
+  // Stats
+  const maxV=Math.max(...hist);
+  const finalV=hist[hist.length-1];
+  const overshoot=((maxV-1)*100).toFixed(1);
+  const ssErr=Math.abs(finalV-1).toFixed(4);
+  let settleIdx=hist.findIndex((v,i)=>i>10&&Math.abs(v-1)<0.02&&hist.slice(i).every(vv=>Math.abs(vv-1)<0.05));
+  const settleT=settleIdx>0?(settleIdx*dt).toFixed(2)+'s':'> 5s';
+
+  document.getElementById('pidStats').innerHTML=
+    `<span>Overshoot: <b style="color:${overshoot>20?'#ff6b35':'#7fff6b'}">${overshoot}%</b></span>`+
+    `<span>SS Error: <b style="color:${ssErr>0.05?'#ff6b35':'#7fff6b'}">${ssErr}</b></span>`+
+    `<span>Settle time: <b style="color:var(--accent)">${settleT}</b></span>`;
+}
+
+['slKp','slKi','slKd'].forEach(id=>document.getElementById(id).addEventListener('input',simPID));
+simPID();
+window.addEventListener('resize',simPID);
+</script>
+</body>
+</html>
